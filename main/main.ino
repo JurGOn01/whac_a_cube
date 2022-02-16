@@ -15,7 +15,8 @@ Author: Jerzy Aleksander Gorak
   =============
 
 
-  'buttons' and 'sensors' are used interchangly. therefore please do not get confused. They refer to the same component - Hall effect sensor.
+  'buttons' or 'tiles' are used to describe led + sensor. therefore please do not get confused. They refer to the same component - Hall effect sensor.
+
 */
 
 #define LED_IN 2
@@ -85,6 +86,8 @@ uint32_t badC = leds->Color(64, 0, 0);//colour which player either lose the game
 
 uint32_t onC = leds->Color(64, 64, 64);
 uint32_t menuGameC = leds->Color(64, 0, 64);
+
+uint32_t game1 = leds->Color(64, 0, 0);
 
 uint32_t red = leds->Color(64, 0, 0);
 uint32_t orange = leds->Color(255, 140, 0);
@@ -213,9 +216,10 @@ const unsigned long start_game_counter = 1000; // five sec
 /*****************************************************************/
 //any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
 
-//selecting the menu options and game selection functions.
-bool Menu_games(button_t *b, int bOrder){
-  setColour(bOrder,menuGameC);
+//reads a specific button and if user presses&holds specific button for 1sec the function returns true, if not then false.
+// this function is for selection of menu options on the cube such as games menu, debug menu and any other menus to come or game options.
+bool isButtonSelected(button_t *b, int bOrder,uint32_t menuC){
+  setColour(bOrder,menuC);
   buttonRead(b,bOrder);
   if(b->ev){
     startMillis = millis();// this will record the time when entered the start of the timer
@@ -229,15 +233,100 @@ bool Menu_games(button_t *b, int bOrder){
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
-//bool Menu_debug()
-//bool Menu_restLights()
-//bool Menu_exit()
 
 #define COUNTDOWN 0
 #define setMoleSquirrel 1
 #define hitOrNotHit 2
 #define dispScore 3
 #define QUIT 4
+
+int game_state = COUNTDOWN;
+int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
+int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
+int game_level = 0;
+unsigned long game_counter = 5000;// not making it constant as this could be varied for difficulty of the game purposes
+const unsigned long delayforbutton = 1000;
+unsigned long current2Millis;
+
+//games logic functions
+void mole_squirrel_game(button_t b[]){
+  while(1){
+    switch(game_state){
+      case COUNTDOWN:
+        CountDownFlashes();
+        game_state = setMoleSquirrel;
+        break;
+
+      case setMoleSquirrel:
+        buttonRead_all(b);
+        prev_mole = mole;
+        prev_squirrel = squirrel;
+        mole = random(0, 12);
+        squirrel = random(0, 12);
+
+        while(mole == prev_mole || mole == prev_squirrel || mole == squirrel){
+          mole = random(0, 12);
+        }
+        while(squirrel == prev_mole || squirrel == prev_squirrel || squirrel == mole){
+          squirrel = random(0, 12);
+        }
+
+        game_level++;
+        if (game_level > 12){game_state = dispScore;}//this prevented the short show up of goodC and badC before displayingScore()
+        else{
+        setColour(mole, goodC);
+        setColour(squirrel, badC);
+        game_state = hitOrNotHit;
+        }
+
+        break;
+
+      case hitOrNotHit:
+        startMillis = millis();
+        while (1){
+          currentMillis = millis();
+          buttonRead_all(b);
+          if (b[mole].ev){
+            player_points++;
+            ledsOff();
+            current2Millis = millis();
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            game_state = setMoleSquirrel;
+            break;
+          }
+          else if (b[squirrel].ev || (currentMillis - startMillis >= game_counter)){
+            ledsOff();
+            current2Millis = millis();
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            game_state = setMoleSquirrel;
+            break;
+          }
+        }
+        break;
+
+      case dispScore:
+        displayScore(player_points);
+        game_state = QUIT;
+        break;
+    }
+    if (game_state == QUIT){
+      break;
+    }
+  }
+}
+
+//Template for creating a game:
+/*void name_of_the_game(button_t b[]){
+  while(1){
+    switch(_game_state_of_the_game){
+      //game logic here//
+    }
+    if (game_state == QUIT){
+      break;
+    }
+  }
+}*/
+
 
 
 void displayScore(int points){
@@ -307,74 +396,6 @@ void CountDownFlashes(){
   delay(1000);
 }
 
-int game_state = COUNTDOWN;
-int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
-int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
-int game_level = 0;
-unsigned long game_counter = 5000;// not making it constant as this could be varied for difficulty of the game purposes
-const unsigned long delayforbutton = 1000;
-unsigned long current2Millis;
-
-void game(button_t b[]){
-  switch(game_state){
-    case COUNTDOWN:
-      CountDownFlashes();
-      game_state = setMoleSquirrel;
-      break;
-
-    case setMoleSquirrel:
-      buttonRead_all(b);
-      prev_mole = mole;
-      prev_squirrel = squirrel;
-      mole = random(0, 12);
-      squirrel = random(0, 12);
-
-      while(mole == prev_mole || mole == prev_squirrel || mole == squirrel){
-        mole = random(0, 12);
-      }
-      while(squirrel == prev_mole || squirrel == prev_squirrel || squirrel == mole){
-        squirrel = random(0, 12);
-      }
-
-      game_level++;
-      if (game_level > 12){game_state = dispScore;}//this prevented the short show up of goodC and badC before displayingScore()
-      else{
-      setColour(mole, goodC);
-      setColour(squirrel, badC);
-      game_state = hitOrNotHit;
-      }
-
-      break;
-
-    case hitOrNotHit:
-      startMillis = millis();
-      while (1){
-        currentMillis = millis();
-        buttonRead_all(b);
-        if (b[mole].ev){
-          player_points++;
-          ledsOff();
-          current2Millis = millis();
-          while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
-          game_state = setMoleSquirrel;
-          break;
-        }
-        else if (b[squirrel].ev || (currentMillis - startMillis >= game_counter)){
-          ledsOff();
-          current2Millis = millis();
-          while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
-          game_state = setMoleSquirrel;
-          break;
-        }
-      }
-      break;
-
-    case dispScore:
-      displayScore(player_points);
-      game_state = QUIT;
-      break;
-  }
-}
 void restartGameStats(){
   game_state = COUNTDOWN;
   game_level = 0;
@@ -399,28 +420,49 @@ void setup() {
 }
 
 void loop() {
-  //top face , top-left button will be able to activate (upon holding button for 1sec) menu for selecting games to play.
-  if (Menu_games(&buttons[TTL],TTL)){
-    selectedOptionIndicatorFlashes();
+  /*Games Menu*/
+  if (isButtonSelected(&buttons[TTL],TTL,menuGameC)){//Game Menu selected by press&hold top left button on top face.
+     selectedOptionIndicatorFlashes();
+     //different colour lights are on, and have different game modes
+     ledsOn();//to make non-game-option tiles with onColour
      while(1){
-      game(buttons);
-      if (game_state == QUIT){
-        ledsOn();
-        restartGameStats();
-        break;
-      }
+          
+       /*Game 1*/if (isButtonSelected(&buttons[TTL],TTL,game1)){
+         mole_squirrel_game(buttons);
+         if (game_state == QUIT){
+           ledsOn();
+           restartGameStats();
+           break;
+         }
+       }
+       /*Game #*/else{}//do nothing
+
+       //add more else-if statments for more games to select on the cube- preferably most frequent games but the closest to the beginning,
+       //of the if-else statment there.
+       // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
+
+       // Template for including the game in the Game Menu:
+       // /*Game #*/ else if (isButtonSelected(&buttons[_orientation_Macro_For_Button],_orientation_Macro_For_Button, _Colour_To_lit_the button){
+       //    /*Include the game here*/
+       //    if (game_state == QUIT){
+       //      ledsOn();
+       //      restartGameStats();
+       //      break;
+       //    }
+       // }
+       // also delete the '//' at the beginning.
     }
 
-      //different colour lights are on, and have different game modes
-      //if (mole_squirrel_game(&buttons[TTL]))
-      //{
+  }
+  /*Debug Menu*/
+  //else if (){
 
-      //}
-      //add more if-else statments for more games to select on the cube
-      // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
-      //else{}
+  //}
+  /*'Cube saver' Menu*/ //has nice visuals where random colour and random tile is selected
+  //else if (){
 
-    }
+  //}
+  //else{}//do nothing
 }
 
   //else if (){}
