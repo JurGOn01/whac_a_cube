@@ -25,6 +25,34 @@ Author: Jerzy Aleksander Gorak
 #define CS2 12
 #define CS3 11
 
+
+
+// face - what face is being talked about?
+// top/bottom  - is the button ,that is talked about, on top or bottom side?
+// left/right - is the button ,that is talked about, on left or right side?
+// this way, it is known which button is being selected e.g. to read sensor or set colour for led.
+// especially for a case where only one led/sensor is being set/read.
+
+//  naming convention: face      top/bottom     left/right
+//           #define    L            T              L
+//              means: this sensor/led is located on left face on top-left corner.
+
+//orentaion is being judged/determinated by the opposite face to the face with charging port.
+
+#define LTL  0
+#define LTR  1
+#define LBL  2
+#define LBR  3 //it always has to go _TL,_TR,_BL,_BR ; as this is how the leds are is wired up on each of the PCBs.
+#define TTL  4
+#define TTR  5
+#define TBL  6
+#define TBR  7
+#define RTL  8
+#define RTR  9
+#define RBL  10
+#define RBR  11
+
+
 #define BOPEN 0
 #define BCLOSED 1
 #define BBOUNCE 2
@@ -35,6 +63,7 @@ typedef struct {
   int bCount; //bounce counter for a button
   int he_val; // read value from the hall effect sensor
   volatile bool ev; // signal for a button
+  //int face;//on which face is the button located
   //note ; sensor is being treated like a regular button.
 }button_t;
 
@@ -47,12 +76,15 @@ button_t buttons[12];
 //LEFT FACE = b[0-3] --> buttons on the left face
 //TOP FACE = b[4-7] --> buttons on the top face
 //RIGHT FACE = b[8-11] --> buttons on the right face
+// those are determinated by the connctions made with PCBs' leds (LED_in , LED_out).
+// then that also relates to the hall effect sensors.
 
 //set begin with GREEN and RED colour, this will be customisable via mobile app. note: there can be developed extra game modes.
 uint32_t goodC = leds->Color(0, 64, 0);//colour which player gets points/correct hits.
 uint32_t badC = leds->Color(64, 0, 0);//colour which player either lose the game or gets deducted points.
 
-uint32_t on_colour = leds->Color(64, 64, 64);;
+uint32_t onC = leds->Color(64, 64, 64);
+uint32_t menuGameC = leds->Color(64, 0, 64);
 
 uint32_t red = leds->Color(64, 0, 0);
 uint32_t orange = leds->Color(255, 140, 0);
@@ -92,6 +124,7 @@ void initButton_all(button_t b[]){
   for (int i = 0; i<12;i++){
     initButton(&b[i]);
   }
+
 }
 void pollButtonTask(button_t *b){
   if (b->bCount > 0) b->bCount -- ;
@@ -124,15 +157,15 @@ void pollButtonTask(button_t *b){
     return;
 }
 
-void buttonRead(button_t *b,int order){
-  if (order>=0 && order<=3){
-    b[order].he_val = left_face.readADC(order);
+void buttonRead(button_t *b, int bOrder){
+  if (bOrder>=0 && bOrder<=3){
+    b->he_val = left_face.readADC(bOrder);
   }
-  else if(order>=4 && order<=7) {
-    b[order].he_val = top_face.readADC(order);
+  else if(bOrder>=4 && bOrder<=7) {
+    b->he_val = top_face.readADC(bOrder);
   }
   else{
-    b[order].he_val = right_face.readADC(order);
+    b->he_val = right_face.readADC(bOrder);
   }//if more faces are added later just more conditional statements
 
   pollButtonTask(b);
@@ -163,10 +196,10 @@ void debug_HEvalues(button_t b[]){
   Serial.print("D11:");Serial.println(b[10].he_val);
   Serial.print("D12:");Serial.println(b[11].he_val);
 }
-//sets all leds on with default 'on' colour (on_colour)
+//sets all leds on with default 'on' colour (onC)
 void ledsOn(){
   for(int i = 0; i<12;i++){
-    setColour(i,on_colour);
+    setColour(i,onC);
   }
 }
 void ledsOff(){
@@ -181,20 +214,19 @@ const unsigned long start_game_counter = 1000; // five sec
 //any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
 
 //selecting the menu options and game selection functions.
-bool Menu_game(button_t b[]){
-  buttonRead_all(b);
-  for (int i = 0; i<12;i++){
-    if(b[i].ev){
-      startMillis = millis();// this will record the time when entered the start of the timer
-      while(b[i].ev){// need to 'trap' the current button that is pressed
-        debug_HEvalues(buttons);
-        buttonRead(&b[i],i);// to update if the user stopped pressing the button.
-        currentMillis=millis();// this will help calculate if one second has been passed.
-        if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
-      }
+bool Menu_games(button_t *b, int bOrder){
+  setColour(bOrder,menuGameC);
+  buttonRead(b,bOrder);
+  if(b->ev){
+    startMillis = millis();// this will record the time when entered the start of the timer
+    while(b->ev){// need to 'trap' the current button that is pressed
+      debug_HEvalues(buttons);
+      buttonRead(b,bOrder);// to update if the user stopped pressing the button.
+      currentMillis=millis();// this will help calculate if one second has been passed.
+      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
     }
-    else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   }
+  else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
 //bool Menu_debug()
@@ -229,6 +261,7 @@ void displayScore(int points){
       delay(750);
     }
   }
+  delay(750);
 }
 void selectedOptionIndicatorFlashes(){
   ledsOff();
@@ -366,22 +399,29 @@ void setup() {
 }
 
 void loop() {
-  debug_HEvalues(buttons);
-  //Menu();
-  if (Menu_game(buttons)){
+  //top face , top-left button will be able to activate (upon holding button for 1sec) menu for selecting games to play.
+  if (Menu_games(&buttons[TTL],TTL)){
     selectedOptionIndicatorFlashes();
-    //different colour lights are on, and have different game modes
-    //if (mole_squirrel_game(1))
-    while(1){
-      debug_HEvalues(buttons);
+     while(1){
       game(buttons);
       if (game_state == QUIT){
-        ledsOff();
+        ledsOn();
         restartGameStats();
         break;
       }
     }
-  }
+
+      //different colour lights are on, and have different game modes
+      //if (mole_squirrel_game(&buttons[TTL]))
+      //{
+
+      //}
+      //add more if-else statments for more games to select on the cube
+      // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
+      //else{}
+
+    }
+}
+
   //else if (){}
   //else{}
-}
