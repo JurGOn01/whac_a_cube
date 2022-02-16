@@ -2,7 +2,7 @@
 *Title:Press_test_with_polling_3faces
 *Description:
 *Extension of Press_test_with_polling, where three faces are being tested at the same time.
-*All three faces are going to lit with red colour initially, when south face magnet is near 
+*All three faces are going to lit with red colour initially, when south face magnet is near
 *any of the sensors on any of the faces(PCBs) - it will light up with green colour.
 *
 *Also here a debug function has been made to read the real-time values from each of the sensors.
@@ -63,19 +63,19 @@ void initPollButton(button_t *b){
     b->bCount = 0 ;
 }
 /*******************************************************************************
- * 
- * this funtion introduces a method of reading a button press knows as polling. 
- * 
- * if the sensor's value is below specificed threshold, this would suggest that 
- * magnet has been pressed down towards the sensor. 
- * 
+ *
+ * this funtion introduces a method of reading a button press knows as polling.
+ *
+ * if the sensor's value is below specificed threshold, this would suggest that
+ * magnet has been pressed down towards the sensor.
+ *
 ********************************************************************************/
 void pollButtonTask(button_t *b){
   if (b->bCount > 0) b->bCount -- ;
   switch (b->state)
   {
     case BOPEN:// user has not pressed button yet
-        if (b->he_val<930) {// value chnaged below 930 
+        if (b->he_val<930) {// value chnaged below 930
             b->state = BCLOSED ;
             b->ev = true ;
         }
@@ -128,7 +128,7 @@ void setup() {
   top_adc.begin(SCK,MOSI,MISO,CS2);
   right_adc.begin(SCK,MOSI,MISO,CS3);
 
-  
+
 
 }
 
@@ -143,13 +143,13 @@ void loop() {
       b[i+4].he_val = top_adc.readADC(i);
       b[i+8].he_val = right_adc.readADC(i);
     }
-    
+
     debug_HEvalues(b);
-    
+
     for (int i = 0; i<12;i++){
       pollButtonTask(&b[i]);
     }
-    
+
     for (int i = 0; i<12;i++){
       if(b[i].ev)
       {
