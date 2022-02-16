@@ -426,7 +426,7 @@ void loop() {
      //different colour lights are on, and have different game modes
      ledsOn();//to make non-game-option tiles with onColour
      while(1){
-          
+
        /*Game 1*/if (isButtonSelected(&buttons[TTL],TTL,game1)){
          mole_squirrel_game(buttons);
          if (game_state == QUIT){
