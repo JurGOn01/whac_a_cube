@@ -26,6 +26,8 @@ Author: Jerzy Aleksander Gorak
 #define CS2 12
 #define CS3 11
 
+#define QUIT 10 // this is used by many other games and options,
+                // thats why is equal to 10
 
 
 // face - what face is being talked about?
@@ -34,8 +36,8 @@ Author: Jerzy Aleksander Gorak
 // this way, it is known which button is being selected e.g. to read sensor or set colour for led.
 // especially for a case where only one led/sensor is being set/read.
 
-//  naming convention: face      top/bottom     left/right
-//           #define    L            T              L
+//  naming convention: face   top/bottom   left/right
+//            #define:  L         T            L
 //              means: this sensor/led is located on left face on top-left corner.
 
 //orentaion is being judged/determinated by the opposite face to the face with charging port.
@@ -81,21 +83,29 @@ button_t buttons[12];
 // then that also relates to the hall effect sensors.
 
 //set begin with GREEN and RED colour, this will be customisable via mobile app. note: there can be developed extra game modes.
-uint32_t goodC = leds->Color(0, 64, 0);//colour which player gets points/correct hits.
-uint32_t badC = leds->Color(64, 0, 0);//colour which player either lose the game or gets deducted points.
+uint32_t goodC = leds->Color(0, 16, 0);//colour which player gets points/correct hits.
+uint32_t badC = leds->Color(16, 0, 0);//colour which player either lose the game or gets deducted points.
 
-uint32_t onC = leds->Color(64, 64, 64);
-uint32_t menuGameC = leds->Color(64, 0, 64);
+uint32_t onC = leds->Color(16, 16, 16);
+uint32_t menuGameC = leds->Color(82, 0, 82);
+uint32_t menuDebugC = leds->Color(84, 78, 25);
 
-uint32_t game1 = leds->Color(64, 0, 0);
+uint32_t game1 = leds->Color(32, 0, 0);
 
-uint32_t red = leds->Color(64, 0, 0);
-uint32_t orange = leds->Color(255, 140, 0);
-uint32_t yellow = leds->Color(234, 255, 0);
-uint32_t green = leds->Color(0, 64, 0);
-uint32_t white = leds->Color(64, 64, 64);
+uint32_t red = leds->Color(16, 0, 0);
+uint32_t orange = leds->Color(16, 9, 0);
+uint32_t yellow = leds->Color(15, 16, 0);
+uint32_t green = leds->Color(0, 16, 0);
+uint32_t white = leds->Color(16, 16, 16);
+uint32_t black = leds->Color(0, 0, 0);
 
-
+//time stuff
+/*****************************************************************/
+unsigned long startMillis;
+unsigned long currentMillis;      //need for 'timed' button press.
+const unsigned long start_game_counter = 1000; // five sec
+const unsigned long timeForHold = 1000;
+/*****************************************************************/
 
 bool isPressed(int bvalue){
   if (bvalue < 900){return true;} // button has been pressed.
@@ -106,21 +116,30 @@ bool isPressed(int bvalue){
   applied.*/
 }
 void initButton(button_t *b){
-    b->state = BOPEN ;
-    b->ev = false ;
-    b->bCount = 0 ;
+    b->state = BOPEN;
+    b->ev = false;
+    b->bCount = 0;
+    b->he_val = 0;
 }
-
-/*******************************************************************************
- *
- * this funtion introduces a method of reading a button press knows as polling.
- *
- * if the sensor's value is below specificed threshold, this would suggest that
- * magnet has been pressed down towards the sensor.
- *
-********************************************************************************/
 void setColour(int LEDnum, uint32_t colour){
   leds->setPixelColor(LEDnum, colour);
+  leds->show();
+}
+//sets all leds on with default 'on' colour (onC)
+void ledsOn(){
+  for(int i = 0; i<12;i++){
+    leds->setPixelColor(i,onC);
+  }
+  leds->show();
+}
+void ledsOff(){
+  leds->clear();
+  leds->show();
+}
+void ledsRed(){
+  for(int i = 0; i<12;i++){
+    leds->setPixelColor(i,red);
+  }
   leds->show();
 }
 void initButton_all(button_t b[]){
@@ -129,6 +148,14 @@ void initButton_all(button_t b[]){
   }
 
 }
+/*******************************************************************************
+ *
+ * this funtion introduces a method of reading a button press knows as polling.
+ *
+ * if the sensor's value is below specificed threshold, this would suggest that
+ * magnet has been pressed down towards the sensor.
+ *
+********************************************************************************/
 void pollButtonTask(button_t *b){
   if (b->bCount > 0) b->bCount -- ;
   switch (b->state)
@@ -159,7 +186,6 @@ void pollButtonTask(button_t *b){
   }
     return;
 }
-
 void buttonRead(button_t *b, int bOrder){
   if (bOrder>=0 && bOrder<=3){
     b->he_val = left_face.readADC(bOrder);
@@ -172,6 +198,7 @@ void buttonRead(button_t *b, int bOrder){
   }//if more faces are added later just more conditional statements
 
   pollButtonTask(b);
+  delay(10);
 }
 void buttonRead_all(button_t b[]){
   for (int i = 0; i<4;i++){
@@ -183,8 +210,8 @@ void buttonRead_all(button_t b[]){
   for (int i = 0; i<12;i++){
     pollButtonTask(&b[i]);
   }
+  delay(10);
 }
-
 void debug_HEvalues(button_t b[]){
   Serial.print("D1:");Serial.println(b[0].he_val);
   Serial.print("D2:");Serial.println(b[1].he_val);
@@ -199,27 +226,79 @@ void debug_HEvalues(button_t b[]){
   Serial.print("D11:");Serial.println(b[10].he_val);
   Serial.print("D12:");Serial.println(b[11].he_val);
 }
-//sets all leds on with default 'on' colour (onC)
-void ledsOn(){
-  for(int i = 0; i<12;i++){
-    setColour(i,onC);
+int debugDelayLed = 150;
+void AllComboLightsColours(){
+  ledsOff();
+  delay(debugDelayLed);
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(64, 0, 0));
   }
-}
-void ledsOff(){
-  leds->clear();
-  leds->show();
-}
-/*****************************************************************/
-unsigned long startMillis;
-unsigned long currentMillis;      //need for 'timed' button press.
-const unsigned long start_game_counter = 1000; // five sec
-/*****************************************************************/
-//any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
+  delay(debugDelayLed);
 
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(0, 64, 0));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(0, 64, 0));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(0, 0, 64));
+  }
+  leds->show();
+  delay(debugDelayLed);
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(64, 64, 0));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(0, 64, 64));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(64, 0, 64));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  for(int i = 0; i<12; i++){
+    leds->setPixelColor(i, leds->Color(64, 64, 64));
+  }
+  leds->show();
+  delay(debugDelayLed);
+
+  //old code idea...
+  /*leds->show();
+  startMillis = millis();
+  currentMillis = millis();
+  while (currentMillis - startMillis <= debugDelayLed){
+    buttonRead_all(b);
+    debug_HEvalues(b);
+    currentMillis = millis();
+  }
+
+  if (isButtonSelected(&buttons[RBR],TTL,black)){
+    break;
+  }*/
+
+}
+//sets colour of the menu option - always goes before conditional statment with isButtonSelected().
+void ButtonSelectColour(int bOrder,uint32_t colour){
+  setColour(bOrder,colour);
+}
+//any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
 //reads a specific button and if user presses&holds specific button for 1sec the function returns true, if not then false.
 // this function is for selection of menu options on the cube such as games menu, debug menu and any other menus to come or game options.
-bool isButtonSelected(button_t *b, int bOrder,uint32_t menuC){
-  setColour(bOrder,menuC);
+bool isButtonSelected(button_t *b, int bOrder){
   buttonRead(b,bOrder);
   if(b->ev){
     startMillis = millis();// this will record the time when entered the start of the timer
@@ -227,19 +306,18 @@ bool isButtonSelected(button_t *b, int bOrder,uint32_t menuC){
       debug_HEvalues(buttons);
       buttonRead(b,bOrder);// to update if the user stopped pressing the button.
       currentMillis=millis();// this will help calculate if one second has been passed.
-      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
+      if(currentMillis - startMillis >= timeForHold){return true;}// and if the user hold it for long enough, start the game sequence.
     }
   }
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
 
+
 #define COUNTDOWN 0
 #define setMoleSquirrel 1
 #define hitOrNotHit 2
 #define dispScore 3
-#define QUIT 4
-
 int game_state = COUNTDOWN;
 int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
 int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
@@ -248,9 +326,85 @@ unsigned long game_counter = 5000;// not making it constant as this could be var
 const unsigned long delayforbutton = 1000;
 unsigned long current2Millis;
 
+void displayScore(int points){
+  leds->clear();
+  leds->show();
+  for(int i = 0; i<points;i++){
+    if (i<=3){
+      setColour(i,red);
+      delay(750);
+      }
+    else if((i>=4) && (i<=7)){
+      setColour(0,orange);setColour(1,orange);setColour(2,orange);setColour(3,orange);
+      setColour(i,orange);
+      delay(750);
+    }
+    else
+    {
+      setColour(0,green);setColour(1,green);setColour(2,green);setColour(3,green);
+      setColour(4,green);setColour(5,green);setColour(6,green);setColour(7,green);
+      setColour(i,green);
+      delay(750);
+    }
+  }
+  delay(750);
+}
+void selectedOptionIndicatorFlashes(){
+  ledsOff();
+  delay(250);
+  for (int i = 0; i<12;i++){
+    setColour(i,white);
+  }
+  delay(250);
+  ledsOff();
+  delay(250);
+  for (int i = 0; i<12;i++){
+    setColour(i,white);
+  }
+  delay(250);
+  ledsOff();
+  delay(250);
+  for (int i = 0; i<12;i++){
+    setColour(i,white);
+  }
+  delay(250);
+  ledsOff();
+  delay(250);
+}
+void CountDownFlashes(){
+  ledsOff();
+  delay(500);
+  for (int i = 0; i<12;i++){
+    setColour(i,white);
+  }
+  delay(1000);
+  ledsOff();
+  delay(1000);
+  for (int i = 4; i<12;i++){
+    setColour(i,white);
+  }
+  delay(1000);
+  ledsOff();
+  delay(1000);
+  for (int i = 4; i<8;i++){
+    setColour(i,white);
+  }
+  delay(1000);
+  ledsOff();
+  delay(1000);
+}
+
+void restartGameStats(){
+  game_state = COUNTDOWN;
+  game_level = 0;
+  player_points = 0;
+
+}
+
 //games logic functions
 void mole_squirrel_game(button_t b[]){
   while(1){
+    
     switch(game_state){
       case COUNTDOWN:
         CountDownFlashes();
@@ -284,20 +438,21 @@ void mole_squirrel_game(button_t b[]){
       case hitOrNotHit:
         startMillis = millis();
         while (1){
+          debug_HEvalues(buttons);
           currentMillis = millis();
           buttonRead_all(b);
           if (b[mole].ev){
             player_points++;
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}
             game_state = setMoleSquirrel;
             break;
           }
           else if (b[squirrel].ev || (currentMillis - startMillis >= game_counter)){
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}
             game_state = setMoleSquirrel;
             break;
           }
@@ -327,81 +482,61 @@ void mole_squirrel_game(button_t b[]){
   }
 }*/
 
+#define LED 0
+#define HE_READING 1
 
+int debug_state = LED;
 
-void displayScore(int points){
-  leds->clear();
-  leds->show();
-  for(int i = 0; i<points;i++){
-    if (i<=3){
-      setColour(i,red);
-      delay(750);
+void debug(button_t b[]){
+  while(1){
+    switch(debug_state){
+      case LED:
+        for (int i = 0; i<5; i++){
+          AllComboLightsColours();
+        }
+        debug_state = HE_READING;
+        
+        break;
+      
+      case HE_READING:
+        buttonRead_all(b);
+        debug_HEvalues(b);
+        for (int i = 0; i<12;i++){
+          if(b[i].ev)
+          {
+            setColour(i, goodC);
+            }
+          else{setColour(i,badC);}
+        }
+        
+        if (isButtonSelected(&b[RBR],RBR)){
+          debug_state = QUIT;
+        }
+        ledsRed();
+        while(1){buttonRead_all(b);debug_HEvalues(b);}
+        
+        break;
       }
-    else if((i>=4) && (i<=7)){
-      setColour(0,orange);setColour(1,orange);setColour(2,orange);setColour(3,orange);
-      setColour(i,orange);
-      delay(750);
-    }
-    else
-    {
-      setColour(0,green);setColour(1,green);setColour(2,green);setColour(3,green);
-      setColour(4,green);setColour(5,green);setColour(6,green);setColour(7,green);
-      setColour(i,green);
-      delay(750);
-    }
-  }
-  delay(750);
-}
-void selectedOptionIndicatorFlashes(){
-  ledsOff();
-  delay(500);
-  for (int i = 0; i<12;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(500);
-  ledsOff();
-  delay(500);
-  for (int i = 0; i<12;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(500);
-  ledsOff();
-  delay(500);
-  for (int i = 0; i<12;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(500);
-  ledsOff();
-  delay(500);
-}
-void CountDownFlashes(){
-
-  for (int i = 0; i<12;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-  for (int i = 4; i<12;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-  for (int i = 4; i<8;i++){
-    setColour(i,leds->Color(64, 64, 64));
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-}
-
-void restartGameStats(){
-  game_state = COUNTDOWN;
-  game_level = 0;
-  player_points = 0;
+      
+      if (debug_state == QUIT)
+      {
+        ledsOn();
+        debug_state = LED;
+        break;
+      }
+   }
 
 }
+
+
+
+
+
+
+
+
+
+
 
 
 void setup() {
@@ -418,16 +553,19 @@ void setup() {
   ledsOn();
 
 }
-
 void loop() {
+  debug_HEvalues(buttons);
   /*Games Menu*/
-  if (isButtonSelected(&buttons[TTL],TTL,menuGameC)){//Game Menu selected by press&hold top left button on top face.
+  ButtonSelectColour(TTL,menuGameC);//colour of thr games menu tile
+  if (isButtonSelected(&buttons[TTL],TTL)){//Game Menu selected by press&hold top left button on top face.
      selectedOptionIndicatorFlashes();
      //different colour lights are on, and have different game modes
      ledsOn();//to make non-game-option tiles with onColour
      while(1){
-
-       /*Game 1*/if (isButtonSelected(&buttons[TTL],TTL,game1)){
+      debug_HEvalues(buttons);
+      ButtonSelectColour(TTL,game1);
+      /*Game 1*/ //whac_a_mole_not_squirrel
+      if (isButtonSelected(&buttons[TTL],TTL)){
          mole_squirrel_game(buttons);
          if (game_state == QUIT){
            ledsOn();
@@ -435,35 +573,41 @@ void loop() {
            break;
          }
        }
-       /*Game #*/else{}//do nothing
+      /*Game #*/
+      /*GAME-INCLUDE TEMPLATE HERE*/
 
-       //add more else-if statments for more games to select on the cube- preferably most frequent games but the closest to the beginning,
-       //of the if-else statment there.
-       // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
+      //add more else-if statments for more games to select on the cube- preferably most frequent games but the closest to the beginning,
+      //of the if-else statment there.
+      // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
 
-       // Template for including the game in the Game Menu:
-       // /*Game #*/ else if (isButtonSelected(&buttons[_orientation_Macro_For_Button],_orientation_Macro_For_Button, _Colour_To_lit_the button){
-       //    /*Include the game here*/
-       //    if (game_state == QUIT){
-       //      ledsOn();
-       //      restartGameStats();
-       //      break;
-       //    }
-       // }
-       // also delete the '//' at the beginning.
+
     }
 
   }
   /*Debug Menu*/
-  //else if (){
-
-  //}
+  ButtonSelectColour(TTR,menuDebugC);//colour of thr games menu tile
+  if (isButtonSelected(&buttons[TTR],TTR)){//i would put else-if but because of the buttonSelectColour() it has to be if.
+    selectedOptionIndicatorFlashes();
+    debug(buttons);
+    }
   /*'Cube saver' Menu*/ //has nice visuals where random colour and random tile is selected
   //else if (){
-
+  //
   //}
   //else{}//do nothing
 }
 
-  //else if (){}
-  //else{}
+
+
+
+// GAME_INCLUDE TEMPLATE:
+// Template for including the game in the Game Menu:
+// /*Game #*/ else if (isButtonSelected(&buttons[_orientation_Macro_For_Button],_orientation_Macro_For_Button, _Colour_To_lit_the button){
+//    /*Include the game here*/
+//    if (game_state == QUIT){
+//      ledsOn();
+//      restartGameStats();
+//      break;
+//    }
+// }
+// also delete the '//' at the beginning.

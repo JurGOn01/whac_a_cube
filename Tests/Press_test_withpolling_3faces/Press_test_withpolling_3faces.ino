@@ -128,8 +128,6 @@ void setup() {
   top_adc.begin(SCK,MOSI,MISO,CS2);
   right_adc.begin(SCK,MOSI,MISO,CS3);
 
-
-
 }
 
 void loop() {
@@ -137,6 +135,7 @@ void loop() {
   for (int i = 0; i<12;i++){
     initPollButton(&b[i]);
   }
+
   while(1){
     for (int i = 0; i<4;i++){
       b[i].he_val = left_adc.readADC(i);
