@@ -84,21 +84,21 @@ Adafruit_MCP3008 right_face;
 // then that also relates to the hall effect sensors.
 
 //set begin with GREEN and RED colour, this will be customisable via mobile app. note: there can be developed extra game modes.
-uint32_t goodC = leds->Color(0, 32, 0);//colour which player gets points/correct hits.
-uint32_t badC = leds->Color(32, 0, 0);//colour which player either lose the game or gets deducted points.
+uint32_t goodC = leds->Color(0, 16, 0);//colour which player gets points/correct hits.
+uint32_t badC = leds->Color(16, 0, 0);//colour which player either lose the game or gets deducted points.
 
-uint32_t onC = leds->Color(32, 32, 32);
-uint32_t menuGameC = leds->Color(164, 0, 164);
-uint32_t menuDebugC = leds->Color(168, 135, 50);
-uint32_t menuAmbientC = leds->Color(121, 68, 0);
+uint32_t onC = leds->Color(16, 16, 16);
+uint32_t menuGameC = leds->Color(21, 0, 21);
+uint32_t menuDebugC = leds->Color(21, 17, 7);
+uint32_t menuAmbientC = leds->Color(15, 7, 0);
 
-uint32_t game1 = leds->Color(32, 0, 0);
+uint32_t game1 = leds->Color(16, 0, 0);
 
-uint32_t red = leds->Color(32, 0, 0);
-uint32_t orange = leds->Color(255, 140, 0);
-uint32_t yellow = leds->Color(234, 255, 0);
-uint32_t green = leds->Color(0, 255, 0);
-uint32_t white = leds->Color(32, 32, 32);
+uint32_t red = leds->Color(16, 0, 0);
+uint32_t orange = leds->Color(16, 9, 0);
+uint32_t yellow = leds->Color(14, 16, 0);
+uint32_t green = leds->Color(0, 16, 0);
+uint32_t white = leds->Color(16, 16, 16);
 uint32_t black = leds->Color(0, 0, 0);
 
 //time stuff
@@ -331,27 +331,293 @@ bool isButtonSelected(button_t *b, int bOrder){
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
+#define LO_SCORE 0
+#define MID_SCORE 1
+#define HI_SCORE 2
+
 void displayScore(int points){
   leds->clear();
   leds->show();
-  for(int i = 0; i<points;i++){
-    if (i<=3){
-      SetnShow_1Led_SingleTypeColour(i,red);
+  int score_state = points;
+  switch(score_state)
+  {
+    case 0:
       delay(750);
-      }
-    else if((i>=4) && (i<=7)){
-      SetnShow_1Led_SingleTypeColour(0,orange);SetnShow_1Led_SingleTypeColour(1,orange);SetnShow_1Led_SingleTypeColour(2,orange);SetnShow_1Led_SingleTypeColour(3,orange);
-      SetnShow_1Led_SingleTypeColour(i,orange);
+      break;
+    case 1:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
       delay(750);
-    }
-    else
-    {
-      SetnShow_1Led_SingleTypeColour(0,green);SetnShow_1Led_SingleTypeColour(1,green);SetnShow_1Led_SingleTypeColour(2,green);SetnShow_1Led_SingleTypeColour(3,green);
-      SetnShow_1Led_SingleTypeColour(4,green);SetnShow_1Led_SingleTypeColour(5,green);SetnShow_1Led_SingleTypeColour(6,green);SetnShow_1Led_SingleTypeColour(7,green);
-      SetnShow_1Led_SingleTypeColour(i,green);
+      break;
+    case 2:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
       delay(750);
-    }
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      break;
+    case 3:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      break;
+    case 4:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+      break;
+    case 5:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      break;
+    case 6:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      break;
+    case 7:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      break;
+    case 8:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBR,yellow);
+      delay(750);
+      break;
+    case 9:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBR,yellow);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,green);
+      SetnShow_1Led_SingleTypeColour(LTR,green);
+      SetnShow_1Led_SingleTypeColour(TTL,green);
+      SetnShow_1Led_SingleTypeColour(TTR,green);
+      SetnShow_1Led_SingleTypeColour(RTL,green);
+      SetnShow_1Led_SingleTypeColour(RTR,green);
+      SetnShow_1Led_SingleTypeColour(LBL,green);
+      SetnShow_1Led_SingleTypeColour(LBR,green);
+
+      SetnShow_1Led_SingleTypeColour(TBL,green);
+      delay(750);
+
+      break;
+    case 10:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBR,yellow);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,green);
+      SetnShow_1Led_SingleTypeColour(LTR,green);
+      SetnShow_1Led_SingleTypeColour(TTL,green);
+      SetnShow_1Led_SingleTypeColour(TTR,green);
+      SetnShow_1Led_SingleTypeColour(RTL,green);
+      SetnShow_1Led_SingleTypeColour(RTR,green);
+      SetnShow_1Led_SingleTypeColour(LBL,green);
+      SetnShow_1Led_SingleTypeColour(LBR,green);
+
+      SetnShow_1Led_SingleTypeColour(TBL,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TBR,green);
+      delay(750);
+
+
+      break;
+    case 11:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBR,yellow);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,green);
+      SetnShow_1Led_SingleTypeColour(LTR,green);
+      SetnShow_1Led_SingleTypeColour(TTL,green);
+      SetnShow_1Led_SingleTypeColour(TTR,green);
+      SetnShow_1Led_SingleTypeColour(RTL,green);
+      SetnShow_1Led_SingleTypeColour(RTR,green);
+      SetnShow_1Led_SingleTypeColour(LBL,green);
+      SetnShow_1Led_SingleTypeColour(LBR,green);
+
+      SetnShow_1Led_SingleTypeColour(TBL,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TBR,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RBL,green);
+      delay(750);
+      break;
+    case 12:
+      SetnShow_1Led_SingleTypeColour(LTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LTR,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTL,red);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TTR,red);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,yellow);
+      SetnShow_1Led_SingleTypeColour(LTR,yellow);
+      SetnShow_1Led_SingleTypeColour(TTL,yellow);
+      SetnShow_1Led_SingleTypeColour(TTR,yellow);
+
+      SetnShow_1Led_SingleTypeColour(RTL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RTR,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBL,yellow);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(LBR,yellow);
+      delay(750);
+
+      SetnShow_1Led_SingleTypeColour(LTL,green);
+      SetnShow_1Led_SingleTypeColour(LTR,green);
+      SetnShow_1Led_SingleTypeColour(TTL,green);
+      SetnShow_1Led_SingleTypeColour(TTR,green);
+      SetnShow_1Led_SingleTypeColour(RTL,green);
+      SetnShow_1Led_SingleTypeColour(RTR,green);
+      SetnShow_1Led_SingleTypeColour(LBL,green);
+      SetnShow_1Led_SingleTypeColour(LBR,green);
+
+      SetnShow_1Led_SingleTypeColour(TBL,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(TBR,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RBL,green);
+      delay(750);
+      SetnShow_1Led_SingleTypeColour(RBR,green);
+      delay(750);
+      break;
+
   }
+
   delay(750);
 }
 void selectedOptionIndicatorFlashes(){
