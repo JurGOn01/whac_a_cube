@@ -70,12 +70,13 @@ typedef struct {
   //note ; sensor is being treated like a regular button.
 }button_t;
 
+button_t buttons[12];
+
 Adafruit_NeoPixel *leds;
 Adafruit_MCP3008 left_face;
 Adafruit_MCP3008 top_face;
 Adafruit_MCP3008 right_face;
 
-button_t buttons[12];
 //LEFT FACE = b[0-3] --> buttons on the left face
 //TOP FACE = b[4-7] --> buttons on the top face
 //RIGHT FACE = b[8-11] --> buttons on the right face
@@ -83,20 +84,21 @@ button_t buttons[12];
 // then that also relates to the hall effect sensors.
 
 //set begin with GREEN and RED colour, this will be customisable via mobile app. note: there can be developed extra game modes.
-uint32_t goodC = leds->Color(0, 16, 0);//colour which player gets points/correct hits.
-uint32_t badC = leds->Color(16, 0, 0);//colour which player either lose the game or gets deducted points.
+uint32_t goodC = leds->Color(0, 32, 0);//colour which player gets points/correct hits.
+uint32_t badC = leds->Color(32, 0, 0);//colour which player either lose the game or gets deducted points.
 
-uint32_t onC = leds->Color(16, 16, 16);
-uint32_t menuGameC = leds->Color(82, 0, 82);
-uint32_t menuDebugC = leds->Color(84, 78, 25);
+uint32_t onC = leds->Color(32, 32, 32);
+uint32_t menuGameC = leds->Color(164, 0, 164);
+uint32_t menuDebugC = leds->Color(168, 135, 50);
+uint32_t menuAmbientC = leds->Color(121, 68, 0);
 
 uint32_t game1 = leds->Color(32, 0, 0);
 
-uint32_t red = leds->Color(16, 0, 0);
-uint32_t orange = leds->Color(16, 9, 0);
-uint32_t yellow = leds->Color(15, 16, 0);
-uint32_t green = leds->Color(0, 16, 0);
-uint32_t white = leds->Color(16, 16, 16);
+uint32_t red = leds->Color(32, 0, 0);
+uint32_t orange = leds->Color(255, 140, 0);
+uint32_t yellow = leds->Color(234, 255, 0);
+uint32_t green = leds->Color(0, 255, 0);
+uint32_t white = leds->Color(32, 32, 32);
 uint32_t black = leds->Color(0, 0, 0);
 
 //time stuff
@@ -104,7 +106,6 @@ uint32_t black = leds->Color(0, 0, 0);
 unsigned long startMillis;
 unsigned long currentMillis;      //need for 'timed' button press.
 const unsigned long start_game_counter = 1000; // five sec
-const unsigned long timeForHold = 1000;
 /*****************************************************************/
 
 bool isPressed(int bvalue){
@@ -121,25 +122,45 @@ void initButton(button_t *b){
     b->bCount = 0;
     b->he_val = 0;
 }
-void setColour(int LEDnum, uint32_t colour){
+void SetnShow_1Led_SingleTypeColour(int LEDnum, uint32_t colour){
   leds->setPixelColor(LEDnum, colour);
+  leds->show();
+}
+void SetnShow_1Led_HUE(int LEDnum, unsigned int hue, byte sat, byte val){
+  leds->setPixelColor(LEDnum,leds->gamma32(leds->ColorHSV(hue, sat, val)));
+  leds->show();
+}
+void SetnShow_1Led_RGB(int LEDnum,byte r, byte g, byte b){
+  leds->setPixelColor(LEDnum, r,g,b);
+  leds->show();
+}
+
+//there is a fill() function, however it does not allow for more complex logic e.g. with rainbow effect or other.
+//therefore it is better to just make own
+void SetnShow_AllLeds_SingleTypeColour(uint32_t colour){
+  for(int i=0; i<LED_COUNT;i++){
+    leds->setPixelColor(i, colour);
+  }
+  leds->show();
+}
+void SetnShow_AllLedsHUE(unsigned int hue, byte sat, byte val){
+  for(int i=0; i<LED_COUNT;i++){
+    leds->setPixelColor(i,leds->gamma32(leds->ColorHSV(hue, sat, val)));
+  }
+  leds->show();
+}
+void SetnShow_AllLedsRGB(byte r, byte g, byte b){
+  for(int i=0; i<LED_COUNT;i++){
+    leds->setPixelColor(i, r, g, b);
+  }
   leds->show();
 }
 //sets all leds on with default 'on' colour (onC)
 void ledsOn(){
-  for(int i = 0; i<12;i++){
-    leds->setPixelColor(i,onC);
-  }
-  leds->show();
+  SetnShow_AllLeds_SingleTypeColour(onC);
 }
 void ledsOff(){
   leds->clear();
-  leds->show();
-}
-void ledsRed(){
-  for(int i = 0; i<12;i++){
-    leds->setPixelColor(i,red);
-  }
   leds->show();
 }
 void initButton_all(button_t b[]){
@@ -198,7 +219,6 @@ void buttonRead(button_t *b, int bOrder){
   }//if more faces are added later just more conditional statements
 
   pollButtonTask(b);
-  delay(10);
 }
 void buttonRead_all(button_t b[]){
   for (int i = 0; i<4;i++){
@@ -210,7 +230,6 @@ void buttonRead_all(button_t b[]){
   for (int i = 0; i<12;i++){
     pollButtonTask(&b[i]);
   }
-  delay(10);
 }
 void debug_HEvalues(button_t b[]){
   Serial.print("D1:");Serial.println(b[0].he_val);
@@ -293,7 +312,7 @@ void AllComboLightsColours(){
 }
 //sets colour of the menu option - always goes before conditional statment with isButtonSelected().
 void ButtonSelectColour(int bOrder,uint32_t colour){
-  setColour(bOrder,colour);
+  SetnShow_1Led_SingleTypeColour(bOrder,colour);
 }
 //any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
 //reads a specific button and if user presses&holds specific button for 1sec the function returns true, if not then false.
@@ -306,12 +325,72 @@ bool isButtonSelected(button_t *b, int bOrder){
       debug_HEvalues(buttons);
       buttonRead(b,bOrder);// to update if the user stopped pressing the button.
       currentMillis=millis();// this will help calculate if one second has been passed.
-      if(currentMillis - startMillis >= timeForHold){return true;}// and if the user hold it for long enough, start the game sequence.
+      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
     }
   }
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
+void displayScore(int points){
+  leds->clear();
+  leds->show();
+  for(int i = 0; i<points;i++){
+    if (i<=3){
+      SetnShow_1Led_SingleTypeColour(i,red);
+      delay(750);
+      }
+    else if((i>=4) && (i<=7)){
+      SetnShow_1Led_SingleTypeColour(0,orange);SetnShow_1Led_SingleTypeColour(1,orange);SetnShow_1Led_SingleTypeColour(2,orange);SetnShow_1Led_SingleTypeColour(3,orange);
+      SetnShow_1Led_SingleTypeColour(i,orange);
+      delay(750);
+    }
+    else
+    {
+      SetnShow_1Led_SingleTypeColour(0,green);SetnShow_1Led_SingleTypeColour(1,green);SetnShow_1Led_SingleTypeColour(2,green);SetnShow_1Led_SingleTypeColour(3,green);
+      SetnShow_1Led_SingleTypeColour(4,green);SetnShow_1Led_SingleTypeColour(5,green);SetnShow_1Led_SingleTypeColour(6,green);SetnShow_1Led_SingleTypeColour(7,green);
+      SetnShow_1Led_SingleTypeColour(i,green);
+      delay(750);
+    }
+  }
+  delay(750);
+}
+void selectedOptionIndicatorFlashes(){
+  ledsOff();
+  delay(250);
+  SetnShow_AllLeds_SingleTypeColour(white);
+  delay(250);
+  ledsOff();
+  delay(250);
+  SetnShow_AllLeds_SingleTypeColour(white);
+  delay(250);
+  ledsOff();
+  delay(250);
+  SetnShow_AllLeds_SingleTypeColour(white);
+  delay(250);
+  ledsOff();
+  delay(250);
+}
+void CountDownFlashes(){
+  ledsOff();
+  delay(500);
+  SetnShow_AllLeds_SingleTypeColour(white);
+  delay(1000);
+  ledsOff();
+  delay(1000);
+  for (int i = 4; i<12;i++){
+    SetnShow_1Led_SingleTypeColour(i,white);
+  }
+  delay(1000);
+  ledsOff();
+  delay(1000);
+  for (int i = 4; i<8;i++){
+    SetnShow_1Led_SingleTypeColour(i,white);
+  }
+  delay(1000);
+  ledsOff();
+  delay(1000);
+}
+
 
 
 #define COUNTDOWN 0
@@ -326,85 +405,10 @@ unsigned long game_counter = 5000;// not making it constant as this could be var
 const unsigned long delayforbutton = 1000;
 unsigned long current2Millis;
 
-void displayScore(int points){
-  leds->clear();
-  leds->show();
-  for(int i = 0; i<points;i++){
-    if (i<=3){
-      setColour(i,red);
-      delay(750);
-      }
-    else if((i>=4) && (i<=7)){
-      setColour(0,orange);setColour(1,orange);setColour(2,orange);setColour(3,orange);
-      setColour(i,orange);
-      delay(750);
-    }
-    else
-    {
-      setColour(0,green);setColour(1,green);setColour(2,green);setColour(3,green);
-      setColour(4,green);setColour(5,green);setColour(6,green);setColour(7,green);
-      setColour(i,green);
-      delay(750);
-    }
-  }
-  delay(750);
-}
-void selectedOptionIndicatorFlashes(){
-  ledsOff();
-  delay(250);
-  for (int i = 0; i<12;i++){
-    setColour(i,white);
-  }
-  delay(250);
-  ledsOff();
-  delay(250);
-  for (int i = 0; i<12;i++){
-    setColour(i,white);
-  }
-  delay(250);
-  ledsOff();
-  delay(250);
-  for (int i = 0; i<12;i++){
-    setColour(i,white);
-  }
-  delay(250);
-  ledsOff();
-  delay(250);
-}
-void CountDownFlashes(){
-  ledsOff();
-  delay(500);
-  for (int i = 0; i<12;i++){
-    setColour(i,white);
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-  for (int i = 4; i<12;i++){
-    setColour(i,white);
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-  for (int i = 4; i<8;i++){
-    setColour(i,white);
-  }
-  delay(1000);
-  ledsOff();
-  delay(1000);
-}
-
-void restartGameStats(){
-  game_state = COUNTDOWN;
-  game_level = 0;
-  player_points = 0;
-
-}
-
 //games logic functions
 void mole_squirrel_game(button_t b[]){
   while(1){
-    
+    debug_HEvalues(buttons);
     switch(game_state){
       case COUNTDOWN:
         CountDownFlashes();
@@ -428,8 +432,8 @@ void mole_squirrel_game(button_t b[]){
         game_level++;
         if (game_level > 12){game_state = dispScore;}//this prevented the short show up of goodC and badC before displayingScore()
         else{
-        setColour(mole, goodC);
-        setColour(squirrel, badC);
+        SetnShow_1Led_SingleTypeColour(mole, goodC);
+        SetnShow_1Led_SingleTypeColour(squirrel, badC);
         game_state = hitOrNotHit;
         }
 
@@ -438,21 +442,20 @@ void mole_squirrel_game(button_t b[]){
       case hitOrNotHit:
         startMillis = millis();
         while (1){
-          debug_HEvalues(buttons);
           currentMillis = millis();
           buttonRead_all(b);
           if (b[mole].ev){
             player_points++;
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
             game_state = setMoleSquirrel;
             break;
           }
           else if (b[squirrel].ev || (currentMillis - startMillis >= game_counter)){
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
             game_state = setMoleSquirrel;
             break;
           }
@@ -469,7 +472,12 @@ void mole_squirrel_game(button_t b[]){
     }
   }
 }
+void restartGameStats(){
+  game_state = COUNTDOWN;
+  game_level = 0;
+  player_points = 0;
 
+}
 //Template for creating a game:
 /*void name_of_the_game(button_t b[]){
   while(1){
@@ -482,11 +490,16 @@ void mole_squirrel_game(button_t b[]){
   }
 }*/
 
+
+//TODO:not working properly - does not work when us isButtonSelected() applied
+// somehow the sensor's value (that we want to read to go back to option menu) is reading -1..
+// reason: still unknown.
+// without the isButtonSelected() exit routine, it does work as intendted however there is no way to go back to the
+// main menu.
+
 #define LED 0
 #define HE_READING 1
-
 int debug_state = LED;
-
 void debug(button_t b[]){
   while(1){
     switch(debug_state){
@@ -495,33 +508,17 @@ void debug(button_t b[]){
           AllComboLightsColours();
         }
         debug_state = HE_READING;
-        
         break;
-      
       case HE_READING:
         buttonRead_all(b);
         debug_HEvalues(b);
         for (int i = 0; i<12;i++){
           if(b[i].ev)
           {
-            setColour(i, goodC);
+            SetnShow_1Led_SingleTypeColour(i, goodC);
             }
-          else{setColour(i,badC);}
+          else{SetnShow_1Led_SingleTypeColour(i,badC);}
         }
-        
-        if (isButtonSelected(&b[RBR],RBR)){
-          debug_state = QUIT;
-        }
-        ledsRed();
-        while(1){buttonRead_all(b);debug_HEvalues(b);}
-        
-        break;
-      }
-      
-      if (debug_state == QUIT)
-      {
-        ledsOn();
-        debug_state = LED;
         break;
       }
    }
@@ -529,8 +526,37 @@ void debug(button_t b[]){
 }
 
 
+//TODO:same problem as debug - -1 on the button that meant to work as a button to leave infinite loop.
 
+/*Effect functions - for ambient effects to place your cube on the desk and just admire the colours*/
+int tile,previousTile;
+int oneEffHUE,previousOneEffHUE;
+byte oneEffSAT,previousOneEffSAT; // 0-256
+void OneFadeInOutTile_Effect(button_t b[]){
+  for(int count = 0; count<20;count++){
+    previousTile = tile;
+    tile = random(0, 12);
+    while(tile==previousTile){tile = random(0, 12);}
 
+    previousOneEffHUE = oneEffHUE;
+    oneEffHUE = random(0, 65536);
+    while(oneEffHUE==previousOneEffHUE){oneEffHUE = random(0, 65536);}
+
+    previousOneEffSAT = oneEffSAT;
+    oneEffSAT = random(0, 256);
+    while(oneEffSAT==previousOneEffSAT){oneEffSAT = random(128, 256);}
+
+    for(int i = 0; i<256; i++){
+      SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
+      delay(10);
+    }
+
+    for(int i = 255; i>=0; i--){
+      SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
+      delay(10);
+    }
+  }
+}
 
 
 
@@ -562,7 +588,6 @@ void loop() {
      //different colour lights are on, and have different game modes
      ledsOn();//to make non-game-option tiles with onColour
      while(1){
-      debug_HEvalues(buttons);
       ButtonSelectColour(TTL,game1);
       /*Game 1*/ //whac_a_mole_not_squirrel
       if (isButtonSelected(&buttons[TTL],TTL)){
@@ -591,9 +616,14 @@ void loop() {
     debug(buttons);
     }
   /*'Cube saver' Menu*/ //has nice visuals where random colour and random tile is selected
-  //else if (){
-  //
-  //}
+  ButtonSelectColour(TBL,menuAmbientC);
+  if (isButtonSelected(&buttons[TBL],TBL)){
+   selectedOptionIndicatorFlashes();
+   while(1){
+    OneFadeInOutTile_Effect(buttons);
+    break;
+   }
+  }
   //else{}//do nothing
 }
 
