@@ -335,6 +335,29 @@ bool isButtonSelected(button_t *b, int bOrder){
 #define MID_SCORE 1
 #define HI_SCORE 2
 
+
+
+
+
+#define COUNTDOWN 0
+#define setMoleSquirrel 1
+#define hitOrNotHit 2
+#define dispScore 3
+int game_state = COUNTDOWN;
+int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
+int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
+int game_rounds = 0;// need for advancing to next level (mole and squirrel game).
+int game_level = 0;// can increase difficulty of the game.
+unsigned long game_counter;// not making it constant as this could be varied for difficulty of the game purposes
+const unsigned long delayforbutton = 1000;
+unsigned long current2Millis;
+void restartGameStats(){
+  game_state = COUNTDOWN;
+  game_level = 0;
+  game_rounds = 0;
+  player_points = 0;
+
+}
 void displayScore(int points){
   leds->clear();
   leds->show();
@@ -656,21 +679,6 @@ void CountDownFlashes(){
   ledsOff();
   delay(1000);
 }
-
-
-
-#define COUNTDOWN 0
-#define setMoleSquirrel 1
-#define hitOrNotHit 2
-#define dispScore 3
-int game_state = COUNTDOWN;
-int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
-int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
-int game_level = 0;
-unsigned long game_counter = 5000;// not making it constant as this could be varied for difficulty of the game purposes
-const unsigned long delayforbutton = 1000;
-unsigned long current2Millis;
-
 //games logic functions
 void mole_squirrel_game(button_t b[]){
   while(1){
@@ -695,8 +703,8 @@ void mole_squirrel_game(button_t b[]){
           squirrel = random(0, 12);
         }
 
-        game_level++;
-        if (game_level > 12){game_state = dispScore;}//this prevented the short show up of goodC and badC before displayingScore()
+        game_rounds++;
+        if (game_rounds > 12){game_state = dispScore;}//this prevented the short show up of goodC and badC before displayingScore()
         else{
         SetnShow_1Led_SingleTypeColour(mole, goodC);
         SetnShow_1Led_SingleTypeColour(squirrel, badC);
@@ -706,26 +714,44 @@ void mole_squirrel_game(button_t b[]){
         break;
 
       case hitOrNotHit:
+        switch(game_level){
+          case 0:
+            game_counter = 2500;
+            break;
+          case 3:
+            game_counter = 1250;
+            break;
+          case 6:
+            game_counter = 950;
+            break;
+          case 9:
+            game_counter = 750;
+            break;
+        }
+
         startMillis = millis();
         while (1){
           currentMillis = millis();
           buttonRead_all(b);
           if (b[mole].ev){
             player_points++;
+            game_level++;
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// still is blocking like delay(), however is much more accurate.
             game_state = setMoleSquirrel;
             break;
           }
           else if (b[squirrel].ev || (currentMillis - startMillis >= game_counter)){
+            game_level++;
             ledsOff();
             current2Millis = millis();
-            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}// instead of blocking delay().
+            while(current2Millis - currentMillis <= delayforbutton){current2Millis = millis();}
             game_state = setMoleSquirrel;
             break;
           }
         }
+
         break;
 
       case dispScore:
@@ -738,12 +764,7 @@ void mole_squirrel_game(button_t b[]){
     }
   }
 }
-void restartGameStats(){
-  game_state = COUNTDOWN;
-  game_level = 0;
-  player_points = 0;
 
-}
 //Template for creating a game:
 /*void name_of_the_game(button_t b[]){
   while(1){
@@ -755,6 +776,7 @@ void restartGameStats(){
     }
   }
 }*/
+
 
 
 //TODO:not working properly - does not work when us isButtonSelected() applied
@@ -791,14 +813,14 @@ void debug(button_t b[]){
 
 }
 
-
+unsigned long minute = 10000;
 //TODO:same problem as debug - -1 on the button that meant to work as a button to leave infinite loop.
 
 /*Effect functions - for ambient effects to place your cube on the desk and just admire the colours*/
 int tile,previousTile;
 int oneEffHUE,previousOneEffHUE;
 byte oneEffSAT,previousOneEffSAT; // 0-256
-void OneFadeInOutTile_Effect(button_t b[]){
+void OneFadeInOutTile_Effect(){
   for(int count = 0; count<20;count++){
     previousTile = tile;
     tile = random(0, 12);
@@ -812,17 +834,63 @@ void OneFadeInOutTile_Effect(button_t b[]){
     oneEffSAT = random(0, 256);
     while(oneEffSAT==previousOneEffSAT){oneEffSAT = random(128, 256);}
 
-    for(int i = 0; i<256; i++){
+    for(int i = 0; i<128; i++){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
       delay(10);
     }
 
-    for(int i = 255; i>=0; i--){
+    for(int i = 128; i>=0; i--){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
       delay(10);
     }
   }
 }
+void ThreeFadeInOutTile_Effect()
+{
+
+}
+void rainbowCycle(int SpeedDelay) {
+  byte *c;
+  uint16_t i, j;
+  startMillis = millis();
+  while(1){
+    currentMillis = millis();
+    for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
+      for(i=0; i< LED_COUNT; i++) {
+        c=Wheel(((i * 256 / LED_COUNT) + j) & 255);
+        SetnShow_1Led_RGB(i, *c, *(c+1), *(c+2));
+      }
+      delay(SpeedDelay);
+    }
+    if(currentMillis - startMillis >= minute){
+      ledsOff();
+      break;
+    }
+  }
+}
+byte * Wheel(byte WheelPos) {
+  static byte c[3];
+
+  if(WheelPos < 85) {
+   c[0]=WheelPos * 3;
+   c[1]=255 - WheelPos * 3;
+   c[2]=0;
+  } else if(WheelPos < 170) {
+   WheelPos -= 85;
+   c[0]=255 - WheelPos * 3;
+   c[1]=0;
+   c[2]=WheelPos * 3;
+  } else {
+   WheelPos -= 170;
+   c[0]=0;
+   c[1]=WheelPos * 3;
+   c[2]=255 - WheelPos * 3;
+  }
+
+  return c;
+}
+
+
 
 
 
@@ -887,8 +955,9 @@ void loop() {
    selectedOptionIndicatorFlashes();
    while(1){
     OneFadeInOutTile_Effect(buttons);
-    break;
+    rainbowCycle(1);
    }
+   ledsOn();
   }
   //else{}//do nothing
 }
