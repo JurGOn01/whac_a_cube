@@ -818,7 +818,7 @@ unsigned long minute = 10000;
 
 /*Effect functions - for ambient effects to place your cube on the desk and just admire the colours*/
 int tile,previousTile;
-int oneEffHUE,previousOneEffHUE;
+unsigned int oneEffHUE,previousOneEffHUE;
 byte oneEffSAT,previousOneEffSAT; // 0-256
 void OneFadeInOutTile_Effect(){
   for(int count = 0; count<20;count++){
@@ -836,19 +836,52 @@ void OneFadeInOutTile_Effect(){
 
     for(int i = 0; i<128; i++){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
-      delay(10);
+      delay(12);
     }
 
     for(int i = 128; i>=0; i--){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
-      delay(10);
+      delay(12);
     }
   }
 }
-void ThreeFadeInOutTile_Effect()
-{
 
+
+void FacePlateFade_Effect(){
+  int led;
+  unsigned int FadeHUE = random(0, 65536);
+  unsigned int nextFadeHUE;
+  byte FadeSAT = random(128,256);
+  byte nextFadeSAT;
+  ledsOff;
+
+  for(int count = 0; count<20;count++){
+    for(led = 0; led<LED_COUNT; led++){
+      for(int i = 0; i<128; i++){
+        SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
+        delay(10);
+      }
+    }
+
+    for(led = LED_COUNT; led>=0; led--){
+      for(int i = 128; i>0; i--){
+        SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
+        delay(10);
+      }
+    }
+
+    nextFadeHUE = random(0, 65536);
+    nextFadeSAT = random(128,256);
+
+    FadeHUE = nextFadeHUE;
+    FadeSAT = nextFadeSAT;
+
+  }
 }
+void resetFacePlateFade_Effect(){}
+
+
+
 void rainbowCycle(int SpeedDelay) {
   byte *c;
   uint16_t i, j;
@@ -954,7 +987,8 @@ void loop() {
   if (isButtonSelected(&buttons[TBL],TBL)){
    selectedOptionIndicatorFlashes();
    while(1){
-    OneFadeInOutTile_Effect(buttons);
+    OneFadeInOutTile_Effect();
+    FacePlateFade_Effect();
     rainbowCycle(1);
    }
    ledsOn();
