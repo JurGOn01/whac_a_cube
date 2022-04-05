@@ -84,21 +84,23 @@ Adafruit_MCP3008 right_face;
 // then that also relates to the hall effect sensors.
 
 //set begin with GREEN and RED colour, this will be customisable via mobile app. note: there can be developed extra game modes.
-uint32_t goodC = leds->Color(0, 16, 0);//colour which player gets points/correct hits.
-uint32_t badC = leds->Color(16, 0, 0);//colour which player either lose the game or gets deducted points.
+uint32_t goodC = leds->Color(0, 255, 0);//colour which player gets points/correct hits.
+uint32_t badC = leds->Color(255, 0, 0);//colour which player either lose the game or gets deducted points.
 
-uint32_t onC = leds->Color(16, 16, 16);
-uint32_t menuGameC = leds->Color(21, 0, 21);
-uint32_t menuDebugC = leds->Color(21, 17, 7);
-uint32_t menuAmbientC = leds->Color(15, 7, 0);
+uint32_t onC = leds->Color(255, 255, 255);
+uint32_t menuGameC = leds->Color(252, 0, 252);
+uint32_t menuDebugC = leds->Color(252, 204, 84);
+uint32_t menuAmbientC = leds->Color(180, 84, 0);
 
-uint32_t game1 = leds->Color(16, 0, 0);
+uint32_t game1 = leds->Color(120, 62, 0);
+uint32_t exit_menu = leds->Color(255, 0, 0);
 
-uint32_t red = leds->Color(16, 0, 0);
-uint32_t orange = leds->Color(16, 9, 0);
-uint32_t yellow = leds->Color(14, 16, 0);
-uint32_t green = leds->Color(0, 16, 0);
-uint32_t white = leds->Color(16, 16, 16);
+
+uint32_t red = leds->Color(240, 0, 0);
+uint32_t orange = leds->Color(240, 135, 0);
+uint32_t yellow = leds->Color(210, 240, 0);
+uint32_t green = leds->Color(0, 240, 0);
+uint32_t white = leds->Color(240, 240, 240);
 uint32_t black = leds->Color(0, 0, 0);
 
 //time stuff
@@ -212,10 +214,10 @@ void buttonRead(button_t *b, int bOrder){
     b->he_val = left_face.readADC(bOrder);
   }
   else if(bOrder>=4 && bOrder<=7) {
-    b->he_val = top_face.readADC(bOrder);
+    b->he_val = top_face.readADC(bOrder-4);
   }
-  else{
-    b->he_val = right_face.readADC(bOrder);
+  else if(bOrder>=8 && bOrder<=11){
+    b->he_val = right_face.readADC(bOrder-8);
   }//if more faces are added later just more conditional statements
 
   pollButtonTask(b);
@@ -295,19 +297,6 @@ void AllComboLightsColours(){
   leds->show();
   delay(debugDelayLed);
 
-  //old code idea...
-  /*leds->show();
-  startMillis = millis();
-  currentMillis = millis();
-  while (currentMillis - startMillis <= debugDelayLed){
-    buttonRead_all(b);
-    debug_HEvalues(b);
-    currentMillis = millis();
-  }
-
-  if (isButtonSelected(&buttons[RBR],TTL,black)){
-    break;
-  }*/
 
 }
 //sets colour of the menu option - always goes before conditional statment with isButtonSelected().
@@ -319,6 +308,7 @@ void ButtonSelectColour(int bOrder,uint32_t colour){
 // this function is for selection of menu options on the cube such as games menu, debug menu and any other menus to come or game options.
 bool isButtonSelected(button_t *b, int bOrder){
   buttonRead(b,bOrder);
+
   if(b->ev){
     startMillis = millis();// this will record the time when entered the start of the timer
     while(b->ev){// need to 'trap' the current button that is pressed
@@ -331,18 +321,34 @@ bool isButtonSelected(button_t *b, int bOrder){
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
+
+bool isButtonSelectedTEST(button_t b[], int bOrder){
+  buttonRead_all(b);
+
+  if(b[bOrder].ev){
+    startMillis = millis();// this will record the time when entered the start of the timer
+    while(b[bOrder].ev){// need to 'trap' the current button that is pressed
+      debug_HEvalues(buttons);
+      buttonRead_all(b);// to update if the user stopped pressing the button.
+      currentMillis=millis();// this will help calculate if one second has been passed.
+      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
+    }
+  }
+  else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
+  return false;
+}
+//buttonRead_all(button_t b[])
+
+
 #define LO_SCORE 0
 #define MID_SCORE 1
 #define HI_SCORE 2
-
-
-
-
 
 #define COUNTDOWN 0
 #define setMoleSquirrel 1
 #define hitOrNotHit 2
 #define dispScore 3
+
 int game_state = COUNTDOWN;
 int mole=0, squirrel=0, prev_mole=0, prev_squirrel=0;
 int player_points;//points are earned when user pressed a button with goodC colour (the mole), and will recive no point for taking too long or hit the badC coloure button (the squarel).
@@ -765,26 +771,6 @@ void mole_squirrel_game(button_t b[]){
   }
 }
 
-//Template for creating a game:
-/*void name_of_the_game(button_t b[]){
-  while(1){
-    switch(_game_state_of_the_game){
-      //game logic here//
-    }
-    if (game_state == QUIT){
-      break;
-    }
-  }
-}*/
-
-
-
-//TODO:not working properly - does not work when us isButtonSelected() applied
-// somehow the sensor's value (that we want to read to go back to option menu) is reading -1..
-// reason: still unknown.
-// without the isButtonSelected() exit routine, it does work as intendted however there is no way to go back to the
-// main menu.
-
 #define LED 0
 #define HE_READING 1
 int debug_state = LED;
@@ -814,7 +800,6 @@ void debug(button_t b[]){
 }
 
 unsigned long minute = 10000;
-//TODO:same problem as debug - -1 on the button that meant to work as a button to leave infinite loop.
 
 /*Effect functions - for ambient effects to place your cube on the desk and just admire the colours*/
 int tile,previousTile;
@@ -834,19 +819,17 @@ void OneFadeInOutTile_Effect(){
     oneEffSAT = random(0, 256);
     while(oneEffSAT==previousOneEffSAT){oneEffSAT = random(128, 256);}
 
-    for(int i = 0; i<128; i++){
+    for(int i = 0; i<256; i++){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
-      delay(12);
+      delay(8);
     }
 
-    for(int i = 128; i>=0; i--){
+    for(int i = 255; i>=0; i--){
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
-      delay(12);
+      delay(8);
     }
   }
 }
-
-
 void FacePlateFade_Effect(){
   int led;
   unsigned int FadeHUE = random(0, 65536);
@@ -854,19 +837,18 @@ void FacePlateFade_Effect(){
   byte FadeSAT = random(128,256);
   byte nextFadeSAT;
   ledsOff;
-
-  for(int count = 0; count<20;count++){
+  for(int count = 0; count<5;count++){
     for(led = 0; led<LED_COUNT; led++){
-      for(int i = 0; i<128; i++){
+      for(int i = 0; i<256; i++){
         SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
-        delay(10);
+        delay(8);
       }
     }
 
     for(led = LED_COUNT; led>=0; led--){
-      for(int i = 128; i>0; i--){
+      for(int i = 255; i>0; i--){
         SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
-        delay(10);
+        delay(8);
       }
     }
 
@@ -878,10 +860,6 @@ void FacePlateFade_Effect(){
 
   }
 }
-void resetFacePlateFade_Effect(){}
-
-
-
 void rainbowCycle(int SpeedDelay) {
   byte *c;
   uint16_t i, j;
@@ -923,15 +901,6 @@ byte * Wheel(byte WheelPos) {
   return c;
 }
 
-
-
-
-
-
-
-
-
-
 void setup() {
   //needed setup intrustions for leds and sensors.
   leds = new Adafruit_NeoPixel(LED_COUNT, LED_IN, NEO_GRB + NEO_KHZ800);
@@ -947,7 +916,6 @@ void setup() {
 
 }
 void loop() {
-  debug_HEvalues(buttons);
   /*Games Menu*/
   ButtonSelectColour(TTL,menuGameC);//colour of thr games menu tile
   if (isButtonSelected(&buttons[TTL],TTL)){//Game Menu selected by press&hold top left button on top face.
@@ -959,30 +927,39 @@ void loop() {
       /*Game 1*/ //whac_a_mole_not_squirrel
       if (isButtonSelected(&buttons[TTL],TTL)){
          mole_squirrel_game(buttons);
-         if (game_state == QUIT){
-           ledsOn();
-           restartGameStats();
-           break;
+         restartGameStats();
+         ledsOn();
          }
-       }
+
+      ButtonSelectColour(RBR,exit_menu);
+      if (isButtonSelected(&buttons[RBR],RBR)){
+          ledsOn();
+          break;
+        }
+      }
+    //   ButtonSelectColour(RBR,exit_menu);//LBL     RBR
+    //   if (isButtonSelectedTEST(buttons,RBR))
+    //   {
+    //     ledsOn();
+    //     break;
+    //   }
+    // }
       /*Game #*/
       /*GAME-INCLUDE TEMPLATE HERE*/
 
       //add more else-if statments for more games to select on the cube- preferably most frequent games but the closest to the beginning,
       //of the if-else statment there.
       // Up to 12 games to select. either manually coding it 'or using the WhacACubeAPP' - (future development)
-
-
-    }
-
   }
+
   /*Debug Menu*/
   ButtonSelectColour(TTR,menuDebugC);//colour of thr games menu tile
   if (isButtonSelected(&buttons[TTR],TTR)){//i would put else-if but because of the buttonSelectColour() it has to be if.
     selectedOptionIndicatorFlashes();
     debug(buttons);
     }
-  /*'Cube saver' Menu*/ //has nice visuals where random colour and random tile is selected
+
+  /*Effects Menu*/ //has nice visuals where random colour and random tile is selected
   ButtonSelectColour(TBL,menuAmbientC);
   if (isButtonSelected(&buttons[TBL],TBL)){
    selectedOptionIndicatorFlashes();
@@ -996,17 +973,62 @@ void loop() {
   //else{}//do nothing
 }
 
+//TODO:
+//  -figure out why the right pcb works when reading all but when reading individual buttons , it does not...
+//  -add feature of being able to leave any menu with RBR button as long as its held for 3sec.
+//  -add in debug, instead of only press - add different amount of pressure applied.
+//
+//  - if that is all done, just comment out the code and tidy up the code ;-)
+
+//TODO:not working properly - does not work when us isButtonSelected() applied
+// somehow the sensor's value (that we want to read to go back to option menu) is reading -1..
+// reason: still unknown.
+// without the isButtonSelected() exit routine, it does work as intendted however there is no way to go back to the
+// main menu.
+// only acts like that when reading the sensors for menu selection ONLY. in-game is reading fine.
+// works when reading all buttons , but not working if only reading the pcb itself only.
 
 
 
-// GAME_INCLUDE TEMPLATE:
-// Template for including the game in the Game Menu:
-// /*Game #*/ else if (isButtonSelected(&buttons[_orientation_Macro_For_Button],_orientation_Macro_For_Button, _Colour_To_lit_the button){
-//    /*Include the game here*/
+
+
+//GAME_INCLUDE TEMPLATE:
+//Template for including the game in the Game Menu:
+///*Game #*/ else if (isButtonSelected(&buttons[_orientation_Macro_For_Button],_orientation_Macro_For_Button, _Colour_To_lit_the button){
+//  /*Include the game here*/
+//  if (game_state == QUIT){
+//    ledsOn();
+//    restartGameStats();
+//    break;
+//  }
+//}
+//also delete the '//' at the beginning.
+
+
+//Creating a game Template:
+//void name_of_the_game(button_t b[]){
+//  while(1){
+//    switch(_game_state_of_the_game){
+//      //game logic here//
+//    }
 //    if (game_state == QUIT){
-//      ledsOn();
-//      restartGameStats();
 //      break;
 //    }
-// }
-// also delete the '//' at the beginning.
+//  }
+//}
+
+
+
+  //old code idea...
+  /*leds->show();
+  startMillis = millis();
+  currentMillis = millis();
+  while (currentMillis - startMillis <= debugDelayLed){
+    buttonRead_all(b);
+    debug_HEvalues(b);
+    currentMillis = millis();
+  }
+
+  if (isButtonSelected(&buttons[RBR],TTL,black)){
+    break;
+  }*/
