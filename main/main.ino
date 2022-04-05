@@ -322,23 +322,6 @@ bool isButtonSelected(button_t *b, int bOrder){
   return false;
 }
 
-bool isButtonSelectedTEST(button_t b[], int bOrder){
-  buttonRead_all(b);
-
-  if(b[bOrder].ev){
-    startMillis = millis();// this will record the time when entered the start of the timer
-    while(b[bOrder].ev){// need to 'trap' the current button that is pressed
-      debug_HEvalues(buttons);
-      buttonRead_all(b);// to update if the user stopped pressing the button.
-      currentMillis=millis();// this will help calculate if one second has been passed.
-      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
-    }
-  }
-  else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
-  return false;
-}
-//buttonRead_all(button_t b[])
-
 
 #define LO_SCORE 0
 #define MID_SCORE 1
@@ -802,7 +785,7 @@ void debug(button_t b[]){
 unsigned long minute = 10000;
 
 /*Effect functions - for ambient effects to place your cube on the desk and just admire the colours*/
-int tile,previousTile;
+int tile,previousTile,effect_exit;
 unsigned int oneEffHUE,previousOneEffHUE;
 byte oneEffSAT,previousOneEffSAT; // 0-256
 void OneFadeInOutTile_Effect(){
@@ -819,14 +802,31 @@ void OneFadeInOutTile_Effect(){
     oneEffSAT = random(0, 256);
     while(oneEffSAT==previousOneEffSAT){oneEffSAT = random(128, 256);}
 
+
     for(int i = 0; i<256; i++){
+      if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+          ledsOn();
+          effect_exit = QUIT;
+          break;
+      }
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
       delay(8);
     }
 
     for(int i = 255; i>=0; i--){
+      if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+          ledsOn();
+          effect_exit = QUIT;
+          break;
+      }
       SetnShow_1Led_HUE(tile, oneEffHUE, oneEffSAT, i);
       delay(8);
+    }
+
+    if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+        ledsOn();
+        effect_exit = QUIT;
+        break;
     }
   }
 }
@@ -840,16 +840,28 @@ void FacePlateFade_Effect(){
   for(int count = 0; count<5;count++){
     for(led = 0; led<LED_COUNT; led++){
       for(int i = 0; i<256; i++){
+        if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+            ledsOn();
+            effect_exit = QUIT;
+            break;
+        }
         SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
         delay(8);
       }
+      if(effect_exit == QUIT){break;}
     }
 
     for(led = LED_COUNT; led>=0; led--){
       for(int i = 255; i>0; i--){
+        if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+            ledsOn();
+            effect_exit = QUIT;
+            break;
+        }
         SetnShow_1Led_HUE(led, FadeHUE, FadeSAT, i);
         delay(8);
       }
+      if(effect_exit == QUIT){break;}
     }
 
     nextFadeHUE = random(0, 65536);
@@ -858,6 +870,7 @@ void FacePlateFade_Effect(){
     FadeHUE = nextFadeHUE;
     FadeSAT = nextFadeSAT;
 
+    if(effect_exit == QUIT){break;}
   }
 }
 void rainbowCycle(int SpeedDelay) {
@@ -868,15 +881,22 @@ void rainbowCycle(int SpeedDelay) {
     currentMillis = millis();
     for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
       for(i=0; i< LED_COUNT; i++) {
+        if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
+            ledsOn();
+            effect_exit = QUIT;
+            break;
+        }
         c=Wheel(((i * 256 / LED_COUNT) + j) & 255);
         SetnShow_1Led_RGB(i, *c, *(c+1), *(c+2));
       }
+      if(effect_exit == QUIT){break;}
       delay(SpeedDelay);
     }
     if(currentMillis - startMillis >= minute){
       ledsOff();
       break;
     }
+    if(effect_exit == QUIT){break;}
   }
 }
 byte * Wheel(byte WheelPos) {
@@ -937,13 +957,6 @@ void loop() {
           break;
         }
       }
-    //   ButtonSelectColour(RBR,exit_menu);//LBL     RBR
-    //   if (isButtonSelectedTEST(buttons,RBR))
-    //   {
-    //     ledsOn();
-    //     break;
-    //   }
-    // }
       /*Game #*/
       /*GAME-INCLUDE TEMPLATE HERE*/
 
@@ -965,12 +978,15 @@ void loop() {
    selectedOptionIndicatorFlashes();
    while(1){
     OneFadeInOutTile_Effect();
+    if(effect_exit == QUIT){break;}
     FacePlateFade_Effect();
+    if(effect_exit == QUIT){break;}
     rainbowCycle(1);
+    if(effect_exit == QUIT){break;}
    }
+   effect_exit = 0; // clear it to be able to show the effects if selected again later without power cycling the cube
    ledsOn();
   }
-  //else{}//do nothing
 }
 
 //TODO:
@@ -987,7 +1003,9 @@ void loop() {
 // main menu.
 // only acts like that when reading the sensors for menu selection ONLY. in-game is reading fine.
 // works when reading all buttons , but not working if only reading the pcb itself only.
-
+// #fixed it --> it was because i was reading beyond the adc index and it was returning -1 as return value to selectedOptionIndicatorFlashes
+// indicates this is beyond the scope of adc. the middle face was only working as adc can allow 0-7, so it was reading it fine still.
+// the adujstment involved  adding -4 to top_adc(bOrder - 4) and to right face, and it works like a charm
 
 
 
