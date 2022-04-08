@@ -65,6 +65,7 @@ typedef struct {
   int state; //state of the button
   int bCount; //bounce counter for a button
   int he_val; // read value from the hall effect sensor
+  bool isledON; //specific led and button are linked - some functions require to know if a specific led is being lit at specific time.
   volatile bool ev; // signal for a button
   //int face;//on which face is the button located
   //note ; sensor is being treated like a regular button.
@@ -95,19 +96,20 @@ uint32_t menuAmbientC = leds->Color(180, 84, 0);
 uint32_t game1 = leds->Color(120, 62, 0);
 uint32_t exit_menu = leds->Color(255, 0, 0);
 
-
-uint32_t red = leds->Color(240, 0, 0);
-uint32_t orange = leds->Color(240, 135, 0);
-uint32_t yellow = leds->Color(210, 240, 0);
-uint32_t green = leds->Color(0, 240, 0);
-uint32_t white = leds->Color(240, 240, 240);
-uint32_t black = leds->Color(0, 0, 0);
+//debug colours
+uint32_t red = leds->Color(255, 0, 0);
+uint32_t green = leds->Color(0, 255, 0);
+uint32_t blue = leds->Color(0, 0, 255);
+uint32_t yellow = leds->Color(255, 255, 0);
+uint32_t cyan = leds->Color(0, 255, 255);
+uint32_t purple = leds->Color(255, 0, 255);
+uint32_t white = leds->Color(240, 240, 240); // used by CountDownFlashes and selectedOptionIndicatorFlashes functions
 
 //time stuff
 /*****************************************************************/
 unsigned long startMillis;
 unsigned long currentMillis;      //need for 'timed' button press.
-const unsigned long start_game_counter = 1000; // five sec
+const unsigned long select_counter = 1000; // once second
 /*****************************************************************/
 
 bool isPressed(int bvalue){
@@ -219,6 +221,7 @@ void buttonRead(button_t *b, int bOrder){
   else if(bOrder>=8 && bOrder<=11){
     b->he_val = right_face.readADC(bOrder-8);
   }//if more faces are added later just more conditional statements
+  //else{}
 
   pollButtonTask(b);
 }
@@ -247,56 +250,51 @@ void debug_HEvalues(button_t b[]){
   Serial.print("D11:");Serial.println(b[10].he_val);
   Serial.print("D12:");Serial.println(b[11].he_val);
 }
+
 int debugDelayLed = 150;
 void AllComboLightsColours(){
   ledsOff();
+
   delay(debugDelayLed);
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(64, 0, 0));
+    leds->setPixelColor(i, red);
   }
   delay(debugDelayLed);
 
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(0, 64, 0));
+    leds->setPixelColor(i, green);
   }
   leds->show();
   delay(debugDelayLed);
 
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(0, 64, 0));
+    leds->setPixelColor(i, blue);
   }
   leds->show();
   delay(debugDelayLed);
 
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(0, 0, 64));
+    leds->setPixelColor(i, yellow);
   }
   leds->show();
   delay(debugDelayLed);
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(64, 64, 0));
+    leds->setPixelColor(i, cyan);
   }
   leds->show();
   delay(debugDelayLed);
 
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(0, 64, 64));
+    leds->setPixelColor(i, purple);
   }
   leds->show();
   delay(debugDelayLed);
 
   for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(64, 0, 64));
+    leds->setPixelColor(i, white);
   }
   leds->show();
   delay(debugDelayLed);
-
-  for(int i = 0; i<12; i++){
-    leds->setPixelColor(i, leds->Color(64, 64, 64));
-  }
-  leds->show();
-  delay(debugDelayLed);
-
 
 }
 //sets colour of the menu option - always goes before conditional statment with isButtonSelected().
@@ -304,7 +302,7 @@ void ButtonSelectColour(int bOrder,uint32_t colour){
   SetnShow_1Led_SingleTypeColour(bOrder,colour);
 }
 //any button that is hold for 1 second, it will start the game sequence. (This hold only is true only when the cube is started)
-//reads a specific button and if user presses&holds specific button for 1sec the function returns true, if not then false.
+// reads a specific button and if user presses&holds specific button for 1sec the function returns true, if not then false.
 // this function is for selection of menu options on the cube such as games menu, debug menu and any other menus to come or game options.
 bool isButtonSelected(button_t *b, int bOrder){
   buttonRead(b,bOrder);
@@ -315,13 +313,12 @@ bool isButtonSelected(button_t *b, int bOrder){
       debug_HEvalues(buttons);
       buttonRead(b,bOrder);// to update if the user stopped pressing the button.
       currentMillis=millis();// this will help calculate if one second has been passed.
-      if(currentMillis - startMillis >= start_game_counter){return true;}// and if the user hold it for long enough, start the game sequence.
+      if(currentMillis - startMillis >= select_counter){return true;}// and if the user hold it for long enough, start the game sequence.
     }
   }
   else{startMillis = 0;currentMillis=0;}// if a user stops holding it - reset the values and proceed to the next button to check.
   return false;
 }
-
 
 #define LO_SCORE 0
 #define MID_SCORE 1
@@ -340,6 +337,7 @@ int game_level = 0;// can increase difficulty of the game.
 unsigned long game_counter;// not making it constant as this could be varied for difficulty of the game purposes
 const unsigned long delayforbutton = 1000;
 unsigned long current2Millis;
+
 void restartGameStats(){
   game_state = COUNTDOWN;
   game_level = 0;
@@ -757,6 +755,7 @@ void mole_squirrel_game(button_t b[]){
 #define LED 0
 #define HE_READING 1
 int debug_state = LED;
+int debug_exit = 0;
 void debug(button_t b[]){
   while(1){
     switch(debug_state){
@@ -768,8 +767,14 @@ void debug(button_t b[]){
         break;
       case HE_READING:
         buttonRead_all(b);
-        debug_HEvalues(b);
+        //debug_HEvalues(b);
         for (int i = 0; i<12;i++){
+          if (isButtonSelected(&buttons[RBR],RBR) || debug_exit == QUIT){
+              ledsOn();
+              debug_exit = QUIT;
+              break;
+          }
+
           if(b[i].ev)
           {
             SetnShow_1Led_SingleTypeColour(i, goodC);
@@ -778,8 +783,8 @@ void debug(button_t b[]){
         }
         break;
       }
+    if (debug_exit == QUIT){break;}
    }
-
 }
 
 unsigned long minute = 10000;
@@ -789,7 +794,7 @@ int tile,previousTile,effect_exit;
 unsigned int oneEffHUE,previousOneEffHUE;
 byte oneEffSAT,previousOneEffSAT; // 0-256
 void OneFadeInOutTile_Effect(){
-  for(int count = 0; count<20;count++){
+  for(int count = 0; count<5;count++){
     previousTile = tile;
     tile = random(0, 12);
     while(tile==previousTile){tile = random(0, 12);}
@@ -837,7 +842,7 @@ void FacePlateFade_Effect(){
   byte FadeSAT = random(128,256);
   byte nextFadeSAT;
   ledsOff;
-  for(int count = 0; count<5;count++){
+  for(int count = 0; count<2;count++){
     for(led = 0; led<LED_COUNT; led++){
       for(int i = 0; i<256; i++){
         if (isButtonSelected(&buttons[RBR],RBR) || effect_exit == QUIT){
@@ -873,6 +878,10 @@ void FacePlateFade_Effect(){
     if(effect_exit == QUIT){break;}
   }
 }
+
+// included external effect ...
+// to show ease of including other functions with minimal editing to work on the cube.
+/***************************************************************************************************/
 void rainbowCycle(int SpeedDelay) {
   byte *c;
   uint16_t i, j;
@@ -920,6 +929,7 @@ byte * Wheel(byte WheelPos) {
 
   return c;
 }
+/***************************************************************************************************/
 
 void setup() {
   //needed setup intrustions for leds and sensors.
@@ -981,7 +991,7 @@ void loop() {
     if(effect_exit == QUIT){break;}
     FacePlateFade_Effect();
     if(effect_exit == QUIT){break;}
-    rainbowCycle(1);
+    rainbowCycle(3);
     if(effect_exit == QUIT){break;}
    }
    effect_exit = 0; // clear it to be able to show the effects if selected again later without power cycling the cube
