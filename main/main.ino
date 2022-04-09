@@ -92,6 +92,7 @@ uint32_t onC = leds->Color(255, 255, 255);
 uint32_t menuGameC = leds->Color(252, 0, 252);
 uint32_t menuDebugC = leds->Color(252, 204, 84);
 uint32_t menuAmbientC = leds->Color(180, 84, 0);
+uint32_t menuAccessabilityC = leds->Color(30, 30, 30);
 
 uint32_t game1 = leds->Color(120, 62, 0);
 uint32_t exit_menu = leds->Color(255, 0, 0);
@@ -330,9 +331,50 @@ bool isButtonSelected(button_t *b, int bOrder){
 *   Currently there are included 3 most common colour-blind types
 *   + the non-colour-blind mode.
 ********************************************************/
+
+
+uint32_t Prot_menu_first_c = leds->Color(0, 255, 11);
+uint32_t Prot_menu_second_c = leds->Color(164, 0, 255);
+
+uint32_t Deut_menu_first_c = leds->Color(0, 125, 255);
+uint32_t Deut_menu_second_c = leds->Color(255, 135, 0);
+
+uint32_t Trit_menu_first_c = leds->Color(58, 0, 255);
+uint32_t Trit_menu_second_c = leds->Color(255, 0, 135);
+
+uint32_t default_menu_first_c = leds->Color(0, 255, 0);
+uint32_t default_menu_second_c = leds->Color(255, 0, 0);
+
+
 void Prot_filter(){
-  goodC = leds->Color(58, 0, 255);//colour which player gets points/correct hits.
-  badC = leds->Color(255, 0, 135);//colour which player either lose the game or gets deducted points.
+
+  goodC = leds->Color(0, 255, 11);
+  badC = leds->Color(164, 0, 255);
+
+  onC = leds->Color(255, 255, 255);
+  menuGameC = leds->Color(255, 0, 255);
+  menuDebugC = leds->Color(0, 81, 180);
+  menuAmbientC = leds->Color(0, 255, 0);
+
+  game1 = leds->Color(41, 0, 120);
+  exit_menu = leds->Color(255, 0, 0);
+}
+void Deut_filter(){
+  goodC = leds->Color(0, 125, 255);
+  badC = leds->Color(255, 135, 0);
+
+  onC = leds->Color(255, 255, 255);
+  menuGameC = leds->Color(171, 0, 252);
+  menuDebugC = leds->Color(84, 252, 249);
+  menuAmbientC = leds->Color(27, 180, 0);
+
+  game1 = leds->Color(120, 0, 0);
+  exit_menu = leds->Color(0, 125, 255);
+
+}
+void Trit_filter(){
+  goodC = leds->Color(58, 0, 255);
+  badC = leds->Color(255, 0, 135);
 
   onC = leds->Color(255, 255, 255);
   menuGameC = leds->Color(252, 0, 252);
@@ -342,13 +384,18 @@ void Prot_filter(){
   game1 = leds->Color(120, 62, 0);
   exit_menu = leds->Color(255, 0, 0);
 }
-void Deut_filter(){
+void default_filter(){
+  goodC = leds->Color(0, 255, 0);
+  badC = leds->Color(255, 0, 0);
 
-}
-void Trit_filter(){
+  onC = leds->Color(255, 255, 255);
+  menuGameC = leds->Color(252, 0, 252);
+  menuDebugC = leds->Color(252, 204, 84);
+  menuAmbientC = leds->Color(180, 84, 0);
 
+  game1 = leds->Color(120, 62, 0);
+  exit_menu = leds->Color(255, 0, 0);
 }
-void default_filter()
 
 /******************************************************/
 
@@ -1017,7 +1064,6 @@ void loop() {
     selectedOptionIndicatorFlashes();
     debug(buttons);
     }
-
   /*Effects Menu*/ //has nice visuals where random colour and random tile is selected
   ButtonSelectColour(TBL,menuAmbientC);
   if (isButtonSelected(&buttons[TBL],TBL)){
@@ -1034,8 +1080,48 @@ void loop() {
    ledsOn();
   }
 
-  ButtonSelectColour(TBR,);
+  ButtonSelectColour(TBR,menuAccessabilityC);
+  if (isButtonSelected(&buttons[TBR],TBR)){
+   selectedOptionIndicatorFlashes();
+   while(1){
+     ButtonSelectColour(RBR,exit_menu);
+     ButtonSelectColour(TTL,Prot_menu_first_c);
+     ButtonSelectColour(TTR,Deut_menu_first_c);
+     ButtonSelectColour(TBL,Trit_menu_first_c);
+     ButtonSelectColour(TBR,default_menu_first_c);
+     delay(1000);
+     ButtonSelectColour(TTL,Prot_menu_second_c);
+     ButtonSelectColour(TTR,Deut_menu_second_c);
+     ButtonSelectColour(TBL,Trit_menu_second_c);
+     ButtonSelectColour(TBR,default_menu_second_c);
+     delay(1000);
 
+     if(isButtonSelected(&buttons[RBR],RBR)){
+       ledsOn();
+       break;
+     }
+     else if (isButtonSelected(&buttons[TTL],TTL))
+     {
+      selectedOptionIndicatorFlashes();
+      Prot_filter();
+     }
+     else if (isButtonSelected(&buttons[TTR],TTR))
+     {
+       selectedOptionIndicatorFlashes();
+       Deut_filter();
+     }
+     else if (isButtonSelected(&buttons[TBL],TBL))
+     {
+       selectedOptionIndicatorFlashes();
+       Trit_filter();
+     }
+     else if (isButtonSelected(&buttons[TBR],TBR)){
+       selectedOptionIndicatorFlashes();
+       default_filter();
+     }
+     else{}
+   }
+  }
 }
 
 //TODO:
