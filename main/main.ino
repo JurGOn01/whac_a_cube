@@ -320,6 +320,41 @@ bool isButtonSelected(button_t *b, int bOrder){
   return false;
 }
 
+/******************************************************/
+/******************************************************
+*   Colour-blind modes
+*   these are functions that change the colour schemes for option menus
+*   and game modes into a colours that are much easier distinguished
+*   by colour-blind individuals.
+*
+*   Currently there are included 3 most common colour-blind types
+*   + the non-colour-blind mode.
+********************************************************/
+void Prot_filter(){
+  goodC = leds->Color(58, 0, 255);//colour which player gets points/correct hits.
+  badC = leds->Color(255, 0, 135);//colour which player either lose the game or gets deducted points.
+
+  onC = leds->Color(255, 255, 255);
+  menuGameC = leds->Color(252, 0, 252);
+  menuDebugC = leds->Color(6, 175, 255);
+  menuAmbientC = leds->Color(19, 0, 255);
+
+  game1 = leds->Color(120, 62, 0);
+  exit_menu = leds->Color(255, 0, 0);
+}
+void Deut_filter(){
+
+}
+void Trit_filter(){
+
+}
+void default_filter()
+
+/******************************************************/
+
+
+
+
 #define LO_SCORE 0
 #define MID_SCORE 1
 #define HI_SCORE 2
@@ -769,18 +804,19 @@ void debug(button_t b[]){
         buttonRead_all(b);
         //debug_HEvalues(b);
         for (int i = 0; i<12;i++){
-          if (isButtonSelected(&buttons[RBR],RBR) || debug_exit == QUIT){
-              ledsOn();
-              debug_exit = QUIT;
-              break;
-          }
-
           if(b[i].ev)
           {
             SetnShow_1Led_SingleTypeColour(i, goodC);
             }
           else{SetnShow_1Led_SingleTypeColour(i,badC);}
+
+          if (isButtonSelected(&buttons[RBR],RBR) || debug_exit == QUIT){//after so the button can go green before exiting the debug menu
+              ledsOn();
+              debug_exit = QUIT;
+              break;
+          }
         }
+
         break;
       }
     if (debug_exit == QUIT){break;}
@@ -997,6 +1033,9 @@ void loop() {
    effect_exit = 0; // clear it to be able to show the effects if selected again later without power cycling the cube
    ledsOn();
   }
+
+  ButtonSelectColour(TBR,);
+
 }
 
 //TODO:

@@ -8,4 +8,4 @@ guide for creating libraries - https://docs.arduino.cc/hacking/software/ArduinoS
 
 How I have learned to use git & github properly -  https://jameschambers.co.uk/git-team-workflow-cheatsheet,https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches,
 after a while I have relised to commit more often. Branches are more for working in the team.
-nice effect for the cube from this website: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectFadeInandFadeOutRedGreenandBlue
+nice effects for the cube from this website: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectFadeInandFadeOutRedGreenandBlue
