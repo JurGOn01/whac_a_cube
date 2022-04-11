@@ -1,7 +1,6 @@
 /*
 Title:
 Description:
-
 Author: Jerzy Aleksander Gorak
  */
 
@@ -13,10 +12,7 @@ Author: Jerzy Aleksander Gorak
 /*
   Documentation
   =============
-
-
   'buttons' or 'tiles' are used to describe led + sensor. therefore please do not get confused. They refer to the same component - Hall effect sensor.
-
 */
 
 #define LED_IN 2
@@ -65,7 +61,6 @@ typedef struct {
   int state; //state of the button
   int bCount; //bounce counter for a button
   int he_val; // read value from the hall effect sensor
-  bool isledON; //specific led and button are linked - some functions require to know if a specific led is being lit at specific time.
   volatile bool ev; // signal for a button
   //int face;//on which face is the button located
   //note ; sensor is being treated like a regular button.
@@ -121,6 +116,21 @@ bool isPressed(int bvalue){
   Probably good idea to create a struct that will hold the amount of strength
   applied.*/
 }
+//
+
+uint32_t isSensitivePress(int bvalue){
+// version 1: any colour value can be used, however only 5 levels of brigthness change
+    uint32_t pressuregoodC;
+    if (bvalue <= 900 && bvalue > 800){pressuregoodC = (goodC * 0.2);}//20
+    else if (bvalue <= 800 && bvalue > 700){pressuregoodC = (goodC * 0.4);}//40%
+    else if (bvalue <= 700 && bvalue > 600){pressuregoodC = (goodC * 0.6);}//60%
+    else if (bvalue <= 600 && bvalue > 500){pressuregoodC = (goodC * 0.8);}//80%
+    else if (bvalue <= 500){pressuregoodC = goodC;}//100%
+
+    return pressuregoodC;
+}
+
+
 void initButton(button_t *b){
     b->state = BOPEN;
     b->ev = false;
@@ -853,7 +863,7 @@ void debug(button_t b[]){
         for (int i = 0; i<12;i++){
           if(b[i].ev)
           {
-            SetnShow_1Led_SingleTypeColour(i, goodC);
+            SetnShow_1Led_SingleTypeColour(i, isSensitivePress(buttons[i].he_val));
             }
           else{SetnShow_1Led_SingleTypeColour(i,badC);}
 
@@ -1181,7 +1191,6 @@ void loop() {
     debug_HEvalues(b);
     currentMillis = millis();
   }
-
   if (isButtonSelected(&buttons[RBR],TTL,black)){
     break;
   }*/
