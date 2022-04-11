@@ -848,6 +848,10 @@ void mole_squirrel_game(button_t b[]){
 #define HE_READING 1
 int debug_state = LED;
 int debug_exit = 0;
+void resetDebug(){
+  debug_state = LED;
+  debug_exit = 0;
+}
 void debug(button_t b[]){
   while(1){
     switch(debug_state){
@@ -1073,6 +1077,7 @@ void loop() {
   if (isButtonSelected(&buttons[TTR],TTR)){//i would put else-if but because of the buttonSelectColour() it has to be if.
     selectedOptionIndicatorFlashes();
     debug(buttons);
+    resetDebug();
     }
   /*Effects Menu*/ //has nice visuals where random colour and random tile is selected
   ButtonSelectColour(TBL,menuAmbientC);
