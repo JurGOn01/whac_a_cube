@@ -1,5 +1,10 @@
-# whac_a_cube
+# Whac_a_cube
 main game code and all test files with libraries
+
+All the functionality is done within the main.ino file.
+There are hardware test files which need to be flashed onto the microcontroller.
+
+Code by itself won't do much if there is no compatible hardware.  
 
 Notes:
 links to the sites that helped me:
